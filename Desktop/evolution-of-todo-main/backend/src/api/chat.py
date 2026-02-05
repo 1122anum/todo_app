@@ -6,7 +6,6 @@ Provides POST /api/{user_id}/chat endpoint for conversational task management.
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-from uuid import UUID
 import logging
 from ..services.chat_service import get_chat_service
 from ..middleware.auth import get_current_user
@@ -55,7 +54,7 @@ class ChatResponse(BaseModel):
 
 @router.post("/{user_id}/chat", response_model=ChatResponse, status_code=status.HTTP_200_OK)
 async def chat(
-    user_id: str,
+    user_id: int,
     request: ChatRequest,
     current_user: User = Depends(get_current_user)
 ) -> ChatResponse:
@@ -82,8 +81,8 @@ async def chat(
     """
     try:
         # Validate user_id matches authenticated user
-        if str(current_user.id) != user_id:
-            logger.warning(f"User {current_user.id} attempted to access chat for user {user_id}")
+        if current_user.user_id != user_id:
+            logger.warning(f"User {current_user.user_id} attempted to access chat for user {user_id}")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You don't have permission to access this conversation"
@@ -102,21 +101,13 @@ async def chat(
                 detail="Message exceeds maximum length of 1000 characters"
             )
 
-        # Parse conversation_id if provided
-        conversation_id = None
-        if request.conversation_id:
-            try:
-                conversation_id = UUID(request.conversation_id)
-            except ValueError:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Invalid conversation_id format"
-                )
+        # Parse conversation_id if provided (it's a string now)
+        conversation_id = request.conversation_id if request.conversation_id else None
 
         # Process message through chat service
         chat_service = get_chat_service()
         result = chat_service.process_message(
-            user_id=UUID(user_id),
+            user_id=user_id,
             message=request.message.strip(),
             conversation_id=conversation_id
         )
@@ -155,7 +146,7 @@ async def chat(
 
 @router.get("/{user_id}/conversations", status_code=status.HTTP_200_OK)
 async def get_conversations(
-    user_id: str,
+    user_id: int,
     current_user: User = Depends(get_current_user),
     limit: int = 20
 ) -> List[Dict[str, Any]]:
@@ -175,7 +166,7 @@ async def get_conversations(
     """
     try:
         # Validate user_id matches authenticated user
-        if str(current_user.id) != user_id:
+        if current_user.user_id != user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You don't have permission to access these conversations"
@@ -183,7 +174,7 @@ async def get_conversations(
 
         chat_service = get_chat_service()
         conversations = chat_service.get_user_conversations(
-            user_id=UUID(user_id),
+            user_id=user_id,
             limit=limit
         )
 

@@ -5,7 +5,7 @@ Orchestrates AI agent execution, conversation management, and message persistenc
 Maintains stateless architecture by fetching conversation context from database.
 """
 from typing import Dict, Any, List, Optional
-from uuid import UUID, uuid4
+from uuid import uuid4
 from datetime import datetime
 import logging
 from sqlmodel import Session, select
@@ -34,21 +34,21 @@ class ChatService:
 
     def process_message(
         self,
-        user_id: UUID,
+        user_id: int,
         message: str,
-        conversation_id: Optional[UUID] = None
+        conversation_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Process a user message and generate AI response.
 
         Args:
-            user_id: Authenticated user ID
+            user_id: Authenticated user ID (integer)
             message: User's message text
             conversation_id: Optional conversation ID to continue existing conversation
 
         Returns:
             Dict containing:
-                - conversation_id: Conversation UUID
+                - conversation_id: Conversation ID (string)
                 - response: AI assistant's response
                 - tool_calls: List of tools executed
         """
@@ -112,19 +112,19 @@ class ChatService:
             logger.error(f"Error processing message: {str(e)}")
             raise
 
-    def _create_conversation(self, session: Session, user_id: UUID) -> Conversation:
+    def _create_conversation(self, session: Session, user_id: int) -> Conversation:
         """
         Create a new conversation for the user.
 
         Args:
             session: Database session
-            user_id: User ID
+            user_id: User ID (integer)
 
         Returns:
             Created Conversation instance
         """
         conversation = Conversation(
-            id=uuid4(),
+            id=str(uuid4()),
             user_id=user_id,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
@@ -138,16 +138,16 @@ class ChatService:
     def _get_conversation(
         self,
         session: Session,
-        conversation_id: UUID,
-        user_id: UUID
+        conversation_id: str,
+        user_id: int
     ) -> Optional[Conversation]:
         """
         Get a conversation by ID with user isolation check.
 
         Args:
             session: Database session
-            conversation_id: Conversation ID
-            user_id: User ID (for isolation check)
+            conversation_id: Conversation ID (string)
+            user_id: User ID (integer, for isolation check)
 
         Returns:
             Conversation instance or None if not found/unauthorized
@@ -168,16 +168,16 @@ class ChatService:
     def _get_conversation_history(
         self,
         session: Session,
-        conversation_id: UUID,
-        user_id: UUID
+        conversation_id: str,
+        user_id: int
     ) -> List[Dict[str, str]]:
         """
         Get conversation message history formatted for AI agent.
 
         Args:
             session: Database session
-            conversation_id: Conversation ID
-            user_id: User ID (for isolation check)
+            conversation_id: Conversation ID (string)
+            user_id: User ID (integer, for isolation check)
 
         Returns:
             List of messages in format [{role, content}, ...]
@@ -203,8 +203,8 @@ class ChatService:
     def _save_message(
         self,
         session: Session,
-        conversation_id: UUID,
-        user_id: UUID,
+        conversation_id: str,
+        user_id: int,
         role: MessageRole,
         content: str
     ) -> Message:
@@ -213,8 +213,8 @@ class ChatService:
 
         Args:
             session: Database session
-            conversation_id: Conversation ID
-            user_id: User ID
+            conversation_id: Conversation ID (string)
+            user_id: User ID (integer)
             role: Message role (user or assistant)
             content: Message content
 
@@ -222,7 +222,7 @@ class ChatService:
             Created Message instance
         """
         message = Message(
-            id=uuid4(),
+            id=str(uuid4()),
             user_id=user_id,
             conversation_id=conversation_id,
             role=role,
@@ -237,14 +237,14 @@ class ChatService:
 
     def get_user_conversations(
         self,
-        user_id: UUID,
+        user_id: int,
         limit: int = 20
     ) -> List[Dict[str, Any]]:
         """
         Get user's recent conversations.
 
         Args:
-            user_id: User ID
+            user_id: User ID (integer)
             limit: Maximum number of conversations to return
 
         Returns:
