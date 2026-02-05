@@ -9,7 +9,7 @@ from uuid import UUID, uuid4
 from datetime import datetime
 import logging
 from sqlmodel import Session, select
-from ..database import get_session
+from ..database import get_session_context
 from ..models.conversation import Conversation
 from ..models.message import Message, MessageRole
 from ..ai.runner import get_agent_runner
@@ -53,7 +53,7 @@ class ChatService:
                 - tool_calls: List of tools executed
         """
         try:
-            with get_session() as session:
+            with get_session_context() as session:
                 # Get or create conversation
                 if conversation_id:
                     conversation = self._get_conversation(session, conversation_id, user_id)
@@ -251,7 +251,7 @@ class ChatService:
             List of conversation summaries
         """
         try:
-            with get_session() as session:
+            with get_session_context() as session:
                 statement = select(Conversation).where(
                     Conversation.user_id == user_id
                 ).order_by(Conversation.updated_at.desc()).limit(limit)
