@@ -45,15 +45,15 @@ Each task follows this format:
 
 ### Tasks
 
-- [ ] T001 Add OpenAI Agents SDK to backend requirements.txt (openai>=1.0.0)
-- [ ] T002 Add Official MCP SDK to backend requirements.txt (mcp>=0.1.0)
-- [ ] T003 Install backend dependencies: pip install -r backend/requirements.txt
-- [ ] T004 Add OpenAI ChatKit to frontend package.json (@openai/chatkit)
-- [ ] T005 Install frontend dependencies: npm install in frontend/
-- [ ] T006 Create backend/.env variables: OPENAI_API_KEY, OPENAI_MODEL, MCP_SERVER_PORT, CHAT_RATE_LIMIT
-- [ ] T007 Create database migration script backend/migrations/003_add_conversations.sql per data-model.md
-- [ ] T008 Run database migration to add conversations and messages tables
-- [ ] T009 Verify migration: Check conversations and messages tables exist with correct schema
+- [X] T001 Add OpenAI Agents SDK to backend requirements.txt (openai>=1.0.0)
+- [X] T002 Add Official MCP SDK to backend requirements.txt (mcp>=0.1.0)
+- [X] T003 Install backend dependencies: pip install -r backend/requirements.txt
+- [X] T004 Add axios to frontend package.json for API calls (Note: OpenAI ChatKit not available, using custom implementation)
+- [X] T005 Install frontend dependencies: npm install in frontend/
+- [X] T006 Create backend/.env variables: OPENAI_API_KEY, OPENAI_MODEL, MCP_SERVER_PORT, CHAT_RATE_LIMIT
+- [X] T007 Create database migration script backend/migrations/003_add_conversations.sql per data-model.md
+- [ ] T008 Run database migration to add conversations and messages tables (Deferred: requires database setup)
+- [ ] T009 Verify migration: Check conversations and messages tables exist with correct schema (Deferred: requires database setup)
 
 **Completion Criteria**: All dependencies installed, database schema updated, environment configured.
 
@@ -67,21 +67,21 @@ Each task follows this format:
 
 ### Database Models
 
-- [ ] T010 [P] Create Conversation model in backend/src/models/conversation.py per data-model.md
-- [ ] T011 [P] Create Message model in backend/src/models/message.py per data-model.md
-- [ ] T012 [P] Update backend/src/models/__init__.py to export Conversation and Message
+- [X] T010 [P] Create Conversation model in backend/src/models/conversation.py per data-model.md
+- [X] T011 [P] Create Message model in backend/src/models/message.py per data-model.md
+- [X] T012 [P] Update backend/src/models/__init__.py to export Conversation and Message
 
 ### MCP Server Infrastructure
 
-- [ ] T013 Create MCP server initialization in backend/src/mcp/server.py
-- [ ] T014 Create MCP tool registry in backend/src/mcp/registry.py
-- [ ] T015 Create MCP tools directory structure: backend/src/mcp/tools/__init__.py
+- [X] T013 Create MCP server initialization in backend/src/mcp/server.py
+- [X] T014 Create MCP tool registry in backend/src/mcp/registry.py
+- [X] T015 Create MCP tools directory structure: backend/src/mcp/tools/__init__.py
 
 ### AI Agent Infrastructure
 
-- [ ] T016 Create AI agent setup in backend/src/ai/agent.py (OpenAI Agents SDK initialization)
-- [ ] T017 Create system prompts in backend/src/ai/prompts.py per research.md
-- [ ] T018 Create agent runner in backend/src/ai/runner.py (conversation execution logic)
+- [X] T016 Create AI agent setup in backend/src/ai/agent.py (OpenAI Agents SDK initialization)
+- [X] T017 Create system prompts in backend/src/ai/prompts.py per research.md
+- [X] T018 Create agent runner in backend/src/ai/runner.py (conversation execution logic)
 
 **Completion Criteria**: MCP server and AI agent infrastructure ready for tool integration.
 
@@ -97,19 +97,19 @@ Each task follows this format:
 
 ### MCP Tool: create_task
 
-- [ ] T019 [US1] Implement create_task MCP tool in backend/src/mcp/tools/create_task.py per contracts/mcp-tools.md
-- [ ] T020 [US1] Register create_task tool in backend/src/mcp/registry.py
-- [ ] T021 [US1] Validate create_task tool: Test with user_id, title, description parameters
+- [X] T019 [US1] Implement create_task MCP tool in backend/src/mcp/tools/create_task.py per contracts/mcp-tools.md
+- [X] T020 [US1] Register create_task tool in backend/src/mcp/registry.py
+- [ ] T021 [US1] Validate create_task tool: Test with user_id, title, description parameters (Requires testing)
 
 ### Chat Service & API
 
-- [ ] T022 [US1] Create ChatService in backend/src/services/chat_service.py (orchestrates AI + MCP)
-- [ ] T023 [US1] Implement conversation creation logic in ChatService
-- [ ] T024 [US1] Implement message persistence logic in ChatService (save user and assistant messages)
-- [ ] T025 [US1] Create chat API endpoint in backend/src/api/chat.py: POST /api/{user_id}/chat per contracts/chat-api.yaml
-- [ ] T026 [US1] Implement authentication middleware for chat endpoint (Better Auth integration)
-- [ ] T027 [US1] Implement rate limiting for chat endpoint (60 requests/minute per user)
-- [ ] T028 [US1] Implement error handling in chat endpoint (AI service errors, validation errors)
+- [X] T022 [US1] Create ChatService in backend/src/services/chat_service.py (orchestrates AI + MCP)
+- [X] T023 [US1] Implement conversation creation logic in ChatService
+- [X] T024 [US1] Implement message persistence logic in ChatService (save user and assistant messages)
+- [X] T025 [US1] Create chat API endpoint in backend/src/api/chat.py: POST /api/{user_id}/chat per contracts/chat-api.yaml
+- [X] T026 [US1] Implement authentication middleware for chat endpoint (Better Auth integration)
+- [ ] T027 [US1] Implement rate limiting for chat endpoint (60 requests/minute per user) (Deferred)
+- [X] T028 [US1] Implement error handling in chat endpoint (AI service errors, validation errors)
 
 ### Frontend
 
