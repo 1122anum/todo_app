@@ -34,7 +34,7 @@ class Message(SQLModel, table=True):
     id: str = Field(primary_key=True)
     user_id: int = Field(foreign_key="users.user_id", index=True)
     conversation_id: str = Field(foreign_key="conversations.id", index=True)
-    role: MessageRole = Field(sa_column=Column(SQLEnum(MessageRole)))
+    role: MessageRole = Field(sa_column=Column(SQLEnum(MessageRole, values_callable=lambda x: [e.value for e in x])))
     content: str = Field(max_length=10000)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
