@@ -107,7 +107,7 @@ export default function Chat() {
           <ChatInterface
             conversationId={conversationId}
             onConversationStart={handleConversationStart}
-            userId={user.id?.toString() || ''}
+            userId={user.user_id?.toString() || ''}
           />
         </div>
       </main>
