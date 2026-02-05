@@ -1,0 +1,337 @@
+openapi: 3.0.3
+info:
+  title: Todo AI Chatbot API
+  description: |
+    Chat API endpoint for conversational task management using AI assistant.
+    Extends Phase II Todo API with natural language interface.
+  version: 3.0.0
+  contact:
+    name: Evolution of Todo - Phase III
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.todo.example.com
+    description: Production server
+
+paths:
+  /api/{user_id}/chat:
+    post:
+      summary: Send message to AI chatbot
+      description: |
+        Send a message to the AI assistant for task management. The assistant can create,
+        view, update, and delete tasks through natural language conversation.
+
+        Conversation context is maintained across messages using conversation_id.
+        If no conversation_id is provided, a new conversation is created.
+
+        The endpoint is stateless - conversation history is fetched from database for each request.
+      operationId: sendChatMessage
+      tags:
+        - Chat
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: Authenticated user's ID
+          schema:
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                conversation_id:
+                  type: string
+                  format: uuid
+                  description: |
+                    Optional conversation ID to continue existing conversation.
+                    If omitted, a new conversation is created.
+                  example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                message:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+                  description: User's message to the AI assistant
+                  example: "Create a task to buy groceries tomorrow"
+            examples:
+              newConversation:
+                summary: Start new conversation
+                value:
+                  message: "What are my tasks?"
+              continueConversation:
+                summary: Continue existing conversation
+                value:
+                  conversation_id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                  message: "Mark the first one as complete"
+              createTask:
+                summary: Create task
+                value:
+                  message: "Create a task to finish the quarterly report by Friday"
+              deleteTask:
+                summary: Delete task
+                value:
+                  conversation_id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                  message: "Delete the task about groceries"
+      responses:
+        '200':
+          description: Successful response from AI assistant
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - conversation_id
+                  - response
+                  - tool_calls
+                properties:
+                  conversation_id:
+                    type: string
+                    format: uuid
+                    description: Conversation ID (new or existing)
+                    example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                  response:
+                    type: string
+                    description: AI assistant's response message
+                    example: "I've created a task titled 'Buy groceries' for you. Is there anything else you'd like me to help with?"
+                  tool_calls:
+                    type: array
+                    description: List of MCP tools executed during this interaction
+                    items:
+                      type: object
+                      properties:
+                        tool:
+                          type: string
+                          description: Name of the MCP tool called
+                          enum: [create_task, get_tasks, update_task, delete_task]
+                        parameters:
+                          type: object
+                          description: Parameters passed to the tool
+                        result:
+                          type: object
+                          description: Result returned by the tool
+                    example:
+                      - tool: "create_task"
+                        parameters:
+                          title: "Buy groceries"
+                          description: ""
+                        result:
+                          success: true
+                          task_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                          message: "Task 'Buy groceries' created successfully"
+              examples:
+                taskCreated:
+                  summary: Task created successfully
+                  value:
+                    conversation_id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                    response: "I've created a task titled 'Buy groceries' for you. Is there anything else you'd like me to help with?"
+                    tool_calls:
+                      - tool: "create_task"
+                        parameters:
+                          title: "Buy groceries"
+                          description: ""
+                        result:
+                          success: true
+                          task_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                          message: "Task 'Buy groceries' created successfully"
+                tasksListed:
+                  summary: Tasks retrieved
+                  value:
+                    conversation_id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                    response: "You have 3 tasks:\n1. Buy groceries (incomplete)\n2. Finish report (incomplete)\n3. Call dentist (complete)"
+                    tool_calls:
+                      - tool: "get_tasks"
+                        parameters:
+                          filter: "all"
+                        result:
+                          success: true
+                          tasks:
+                            - id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                              title: "Buy groceries"
+                              completed: false
+                            - id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                              title: "Finish report"
+                              completed: false
+                            - id: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                              title: "Call dentist"
+                              completed: true
+                clarificationNeeded:
+                  summary: AI asks for clarification
+                  value:
+                    conversation_id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                    response: "I found 3 tasks with 'report' in the title. Which one would you like to complete?\n1. Finish quarterly report\n2. Review annual report\n3. Submit expense report"
+                    tool_calls:
+                      - tool: "get_tasks"
+                        parameters:
+                          search: "report"
+                        result:
+                          success: true
+                          tasks:
+                            - id: "d4e5f6a7-b8c9-0123-def1-234567890123"
+                              title: "Finish quarterly report"
+                              completed: false
+                            - id: "e5f6a7b8-c9d0-1234-ef12-345678901234"
+                              title: "Review annual report"
+                              completed: false
+                            - id: "f6a7b8c9-d0e1-2345-f123-456789012345"
+                              title: "Submit expense report"
+                              completed: false
+        '400':
+          description: Bad request - invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                emptyMessage:
+                  summary: Empty message
+                  value:
+                    error: "Message cannot be empty"
+                    code: "INVALID_INPUT"
+                messageTooLong:
+                  summary: Message exceeds length limit
+                  value:
+                    error: "Message exceeds maximum length of 1000 characters"
+                    code: "MESSAGE_TOO_LONG"
+                invalidConversationId:
+                  summary: Invalid conversation ID format
+                  value:
+                    error: "Invalid conversation_id format"
+                    code: "INVALID_UUID"
+        '401':
+          description: Unauthorized - missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Authentication required"
+                code: "UNAUTHORIZED"
+        '403':
+          description: Forbidden - user doesn't own the conversation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "You don't have access to this conversation"
+                code: "FORBIDDEN"
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Conversation not found"
+                code: "NOT_FOUND"
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Rate limit exceeded. Please try again in 60 seconds."
+                code: "RATE_LIMIT_EXCEEDED"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                aiServiceError:
+                  summary: AI service unavailable
+                  value:
+                    error: "AI service temporarily unavailable. Please try again later."
+                    code: "AI_SERVICE_ERROR"
+                databaseError:
+                  summary: Database error
+                  value:
+                    error: "An error occurred while processing your request"
+                    code: "INTERNAL_ERROR"
+        '503':
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Service temporarily unavailable"
+                code: "SERVICE_UNAVAILABLE"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token obtained from Better Auth authentication.
+        Include in Authorization header as: Bearer <token>
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+        - code
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: Machine-readable error code
+          enum:
+            - INVALID_INPUT
+            - MESSAGE_TOO_LONG
+            - INVALID_UUID
+            - UNAUTHORIZED
+            - FORBIDDEN
+            - NOT_FOUND
+            - RATE_LIMIT_EXCEEDED
+            - AI_SERVICE_ERROR
+            - INTERNAL_ERROR
+            - SERVICE_UNAVAILABLE
+        details:
+          type: object
+          description: Optional additional error details
+          additionalProperties: true
+
+  examples:
+    CreateTaskRequest:
+      summary: Create a task
+      value:
+        message: "Create a task to buy groceries tomorrow"
+
+    ViewTasksRequest:
+      summary: View all tasks
+      value:
+        conversation_id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        message: "What are my tasks?"
+
+    CompleteTaskRequest:
+      summary: Mark task as complete
+      value:
+        conversation_id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        message: "Mark the groceries task as complete"
+
+    DeleteTaskRequest:
+      summary: Delete a task
+      value:
+        conversation_id: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        message: "Delete the task about groceries"
+
+tags:
+  - name: Chat
+    description: AI chatbot endpoints for conversational task management
