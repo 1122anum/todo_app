@@ -1,13 +1,14 @@
 """
-AI Agent setup for Phase III AI Chatbot using OpenAI Agents SDK.
+AI Agent setup for Phase III AI Chatbot using OpenRouter API.
 
-This module initializes the OpenAI agent that handles natural language
+This module initializes the AI agent that handles natural language
 processing and tool calling for conversational task management.
+Uses OpenRouter API (OpenAI-compatible) for LLM access.
 """
-import os
 from typing import List, Dict, Any, Optional
 import logging
 from openai import OpenAI
+from ..config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -23,26 +24,40 @@ class TodoAgent:
     def __init__(
         self,
         api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
         model: Optional[str] = None,
         system_prompt: Optional[str] = None
     ):
         """
-        Initialize the AI agent.
+        Initialize the AI agent with OpenRouter API.
 
         Args:
-            api_key: OpenAI API key (defaults to OPENAI_API_KEY env var)
-            model: Model to use (defaults to OPENAI_MODEL env var or gpt-4)
+            api_key: OpenRouter API key (defaults to settings.OPENROUTER_API_KEY)
+            base_url: OpenRouter base URL (defaults to settings.OPENROUTER_BASE_URL)
+            model: Model to use (defaults to settings.OPENROUTER_MODEL)
             system_prompt: System prompt for agent behavior
         """
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.api_key = api_key or settings.OPENROUTER_API_KEY
         if not self.api_key:
-            raise ValueError("OPENAI_API_KEY not set in environment")
+            raise ValueError(
+                "OPENROUTER_API_KEY not set in environment. "
+                "Please add OPENROUTER_API_KEY to your .env file. "
+                "Get your key at: https://openrouter.ai/keys"
+            )
 
-        self.model = model or os.getenv("OPENAI_MODEL", "gpt-4")
+        self.base_url = base_url or settings.OPENROUTER_BASE_URL
+        self.model = model or settings.OPENROUTER_MODEL
         self.system_prompt = system_prompt
-        self.client = OpenAI(api_key=self.api_key)
 
-        logger.info(f"AI Agent initialized with model: {self.model}")
+        # Initialize OpenAI client with OpenRouter configuration
+        self.client = OpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url
+        )
+
+        logger.info(f"AI Agent initialized with OpenRouter")
+        logger.info(f"Model: {self.model}")
+        logger.info(f"Base URL: {self.base_url}")
 
     def run(
         self,
