@@ -6,7 +6,6 @@ through natural language conversation.
 """
 from typing import Dict, Any
 import logging
-from uuid import UUID
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +18,7 @@ class CreateTaskTool:
     Enforces user isolation and validates inputs.
     """
 
-    def execute(self, user_id: str, title: str, description: str = "") -> Dict[str, Any]:
+    def execute(self, user_id: int, title: str, description: str = "") -> Dict[str, Any]:
         """
         Create a new task for the user.
 
@@ -31,7 +30,7 @@ class CreateTaskTool:
         Returns:
             Dict containing:
                 - success: Boolean indicating operation success
-                - task_id: UUID of created task
+                - task_id: ID of created task
                 - task: Task details
                 - message: Human-readable success message
         """
@@ -58,23 +57,26 @@ class CreateTaskTool:
                     "code": "INVALID_INPUT"
                 }
 
-            # Import task service (lazy import to avoid circular dependencies)
-            from ...services.todo_service import create_task
+            # Import dependencies (lazy import to avoid circular dependencies)
+            from ...services.todo_service import TodoService
+            from ...database import get_session_context
 
-            # Create task using existing Phase II service
-            task = create_task(
-                user_id=UUID(user_id),
-                title=title.strip(),
-                description=description.strip() if description else ""
-            )
+            # Create task using existing Phase II service with proper session management
+            with get_session_context() as session:
+                task = TodoService.create_todo(
+                    session=session,
+                    user_id=user_id,
+                    title=title.strip(),
+                    description=description.strip() if description else ""
+                )
 
-            logger.info(f"Task created via MCP tool: {task.id} for user {user_id}")
+            logger.info(f"Task created via MCP tool: {task.todo_id} for user {user_id}")
 
             return {
                 "success": True,
-                "task_id": str(task.id),
+                "task_id": str(task.todo_id),
                 "task": {
-                    "id": str(task.id),
+                    "id": str(task.todo_id),
                     "title": task.title,
                     "description": task.description,
                     "completed": task.completed,

@@ -53,6 +53,7 @@ class ChatService:
                 - tool_calls: List of tools executed
         """
         try:
+            # Step 1: Get or create conversation and save user message
             with get_session_context() as session:
                 # Get or create conversation
                 if conversation_id:
@@ -81,32 +82,37 @@ class ChatService:
                     message
                 )
 
-                # Run AI agent
-                agent_response = self.agent_runner.run_conversation(
-                    user_message=message,
-                    conversation_history=conversation_history,
-                    user_id=str(user_id)
-                )
+                # Commit user message before running agent
+                # This releases the database lock so tools can open their own sessions
+                session.commit()
 
-                # Save assistant response
+                conv_id = conversation.id
+
+            # Step 2: Run AI agent (tools can now use their own sessions)
+            agent_response = self.agent_runner.run_conversation(
+                user_message=message,
+                conversation_history=conversation_history,
+                user_id=str(user_id)
+            )
+
+            # Step 3: Save assistant response in a new session
+            with get_session_context() as session:
                 self._save_message(
                     session,
-                    conversation.id,
+                    conv_id,
                     user_id,
                     MessageRole.ASSISTANT,
                     agent_response["response"]
                 )
-
-                # Commit all changes
                 session.commit()
 
-                logger.info(f"Message processed for conversation {conversation.id}")
+            logger.info(f"Message processed for conversation {conv_id}")
 
-                return {
-                    "conversation_id": str(conversation.id),
-                    "response": agent_response["response"],
-                    "tool_calls": agent_response.get("tool_calls", [])
-                }
+            return {
+                "conversation_id": str(conv_id),
+                "response": agent_response["response"],
+                "tool_calls": agent_response.get("tool_calls", [])
+            }
 
         except Exception as e:
             logger.error(f"Error processing message: {str(e)}")
