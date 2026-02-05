@@ -113,11 +113,11 @@ Each task follows this format:
 
 ### Frontend
 
-- [ ] T029 [US1] Create ChatInterface component in frontend/src/components/ChatInterface.tsx using OpenAI ChatKit
-- [ ] T030 [US1] Create chat API client in frontend/src/services/chatApi.ts
-- [ ] T031 [US1] Create chat page in frontend/src/pages/chat.tsx
-- [ ] T032 [US1] Integrate authentication in chat page (pass user token to API)
-- [ ] T033 [US1] Add navigation link to chat page in main navigation
+- [X] T029 [US1] Create ChatInterface component in frontend/src/components/ChatInterface.tsx using custom implementation
+- [X] T030 [US1] Create chat API client in frontend/src/services/chatApi.ts
+- [X] T031 [US1] Create chat page in frontend/src/pages/chat.tsx
+- [X] T032 [US1] Integrate authentication in chat page (pass user token to API)
+- [X] T033 [US1] Add navigation link to chat page in main navigation
 
 ### Integration & Validation
 
