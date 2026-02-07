@@ -50,9 +50,14 @@ class TodoAgent:
         self.system_prompt = system_prompt
 
         # Initialize OpenAI client with OpenRouter configuration
+        # OpenRouter requires additional headers for authentication
         self.client = OpenAI(
             api_key=self.api_key,
-            base_url=self.base_url
+            base_url=self.base_url,
+            default_headers={
+                "HTTP-Referer": "http://localhost:3000",  # Your app URL
+                "X-Title": "Todo AI Chatbot"  # Your app name
+            }
         )
 
         logger.info(f"AI Agent initialized with OpenRouter")

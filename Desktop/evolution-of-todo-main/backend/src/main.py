@@ -74,7 +74,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth_router)
-app.include_router(todo_router)
+app.include_router(todo_router, prefix="/api")
 app.include_router(chat_router)  # Phase III: AI Chatbot
 
 @app.get("/")
