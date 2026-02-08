@@ -1,0 +1,58 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: cron-binding
+  namespace: todo-app
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+  # Cron schedule for recurring task generation (every minute)
+  - name: schedule
+    value: "@every 1m"
+
+  # Direction (input only - triggers services)
+  - name: direction
+    value: "input"
+
+scopes:
+  - recurring-task-service
+  - notification-service
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: recurring-tasks-cron
+  namespace: todo-app
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+  # Cron schedule for recurring task generation (every minute)
+  - name: schedule
+    value: "*/1 * * * *"  # Every minute
+
+  - name: direction
+    value: "input"
+
+scopes:
+  - recurring-task-service
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: reminders-cron
+  namespace: todo-app
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+  # Cron schedule for reminder checking (every minute)
+  - name: schedule
+    value: "*/1 * * * *"  # Every minute
+
+  - name: direction
+    value: "input"
+
+scopes:
+  - notification-service

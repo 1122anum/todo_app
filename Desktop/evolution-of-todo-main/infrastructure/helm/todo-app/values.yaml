@@ -1,0 +1,297 @@
+# Default values for todo-app Helm chart
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global configuration
+global:
+  namespace: todo-app
+  imageRegistry: docker.io
+  imagePullPolicy: IfNotPresent
+  storageClass: standard
+
+# Dapr configuration
+dapr:
+  enabled: true
+  appPort: 8000
+  logLevel: info
+  enableMetrics: true
+  metricsPort: 9090
+
+# Frontend Service (Next.js)
+frontend:
+  enabled: true
+  name: frontend
+  replicaCount: 2
+  image:
+    repository: todo-frontend
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  env:
+    - name: NODE_ENV
+      value: "production"
+    - name: NEXT_PUBLIC_API_URL
+      value: "http://todo-api:8000"
+
+# Chat API Service (FastAPI + OpenAI Agents SDK)
+chatApi:
+  enabled: true
+  name: chat-api
+  replicaCount: 2
+  image:
+    repository: todo-chat-api
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  dapr:
+    enabled: true
+    appId: chat-api
+    appPort: 8000
+  resources:
+    requests:
+      cpu: 300m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  env:
+    - name: ENVIRONMENT
+      value: "production"
+    - name: LOG_LEVEL
+      value: "info"
+
+# Todo API Service (FastAPI)
+todoApi:
+  enabled: true
+  name: todo-api
+  replicaCount: 2
+  image:
+    repository: todo-api
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  dapr:
+    enabled: true
+    appId: todo-api
+    appPort: 8000
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  env:
+    - name: ENVIRONMENT
+      value: "production"
+    - name: LOG_LEVEL
+      value: "info"
+
+# Recurring Task Service (FastAPI)
+recurringTaskService:
+  enabled: true
+  name: recurring-task-service
+  replicaCount: 1
+  image:
+    repository: todo-recurring-service
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  dapr:
+    enabled: true
+    appId: recurring-task-service
+    appPort: 8000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+  env:
+    - name: ENVIRONMENT
+      value: "production"
+    - name: LOG_LEVEL
+      value: "info"
+    - name: CRON_SCHEDULE
+      value: "*/1 * * * *"
+
+# Notification Service (FastAPI)
+notificationService:
+  enabled: true
+  name: notification-service
+  replicaCount: 1
+  image:
+    repository: todo-notification-service
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  dapr:
+    enabled: true
+    appId: notification-service
+    appPort: 8000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+  env:
+    - name: ENVIRONMENT
+      value: "production"
+    - name: LOG_LEVEL
+      value: "info"
+    - name: CRON_SCHEDULE
+      value: "*/1 * * * *"
+
+# Audit Log Service (FastAPI)
+auditLogService:
+  enabled: true
+  name: audit-log-service
+  replicaCount: 1
+  image:
+    repository: todo-audit-service
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  dapr:
+    enabled: true
+    appId: audit-log-service
+    appPort: 8000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+  env:
+    - name: ENVIRONMENT
+      value: "production"
+    - name: LOG_LEVEL
+      value: "info"
+
+# WebSocket Sync Service (FastAPI)
+websocketSyncService:
+  enabled: true
+  name: websocket-sync-service
+  replicaCount: 2
+  image:
+    repository: todo-websocket-service
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 8003
+    targetPort: 8003
+  dapr:
+    enabled: true
+    appId: websocket-sync-service
+    appPort: 8003
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  env:
+    - name: ENVIRONMENT
+      value: "production"
+    - name: LOG_LEVEL
+      value: "info"
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: todo.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+          port: 3000
+        - path: /api
+          pathType: Prefix
+          service: todo-api
+          port: 8000
+        - path: /chat
+          pathType: Prefix
+          service: chat-api
+          port: 8000
+        - path: /ws
+          pathType: Prefix
+          service: websocket-sync-service
+          port: 8003
+  tls:
+    - secretName: todo-app-tls
+      hosts:
+        - todo.local
+
+# Database configuration (references Kubernetes secret)
+database:
+  secretName: db-connection
+  connectionStringKey: connectionString
+
+# Monitoring and observability
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 30s
+  grafana:
+    enabled: false
+
+# Autoscaling
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  capabilities:
+    drop:
+      - ALL
+
+# Network policies
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress

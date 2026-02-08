@@ -1,0 +1,51 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+  namespace: todo-app
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  # Kafka broker addresses
+  - name: brokers
+    value: "redpanda.redpanda.svc.cluster.local:9092"
+
+  # Consumer group configuration
+  - name: consumerGroup
+    value: "todo-app-consumers"
+
+  # Client ID
+  - name: clientID
+    value: "todo-app-client"
+
+  # Authentication (disabled for local development)
+  - name: authRequired
+    value: "false"
+
+  # Topic configuration
+  - name: maxMessageBytes
+    value: "1048576"  # 1MB max message size
+
+  # Consumer configuration
+  - name: consumeRetryInterval
+    value: "200ms"
+
+  - name: version
+    value: "2.8.0"  # Kafka protocol version
+
+  # Delivery guarantee
+  - name: initialOffset
+    value: "newest"  # Start from newest messages for new consumers
+
+  # Performance tuning
+  - name: channelBufferSize
+    value: "256"
+
+scopes:
+  - chat-api
+  - todo-api
+  - recurring-task-service
+  - notification-service
+  - audit-log-service
+  - websocket-sync-service

@@ -1,0 +1,56 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: todo-app
+spec:
+  type: state.postgresql
+  version: v1
+  metadata:
+  # Connection string from Kubernetes secret
+  - name: connectionString
+    secretKeyRef:
+      name: db-connection
+      key: connectionString
+
+  # Table configuration
+  - name: tableName
+    value: "dapr_state"
+
+  # Metadata table for tracking
+  - name: metadataTableName
+    value: "dapr_metadata"
+
+  # Timeout configuration
+  - name: timeout
+    value: "20s"
+
+  # Connection pool settings
+  - name: maxConns
+    value: "10"
+
+  - name: connectionMaxIdleTime
+    value: "5m"
+
+  # Performance tuning
+  - name: queryExecMode
+    value: "cache_statement"
+
+  # Cleanup configuration
+  - name: cleanupIntervalInSeconds
+    value: "3600"  # Clean up expired state every hour
+
+  # Actor state store configuration
+  - name: actorStateStore
+    value: "true"
+
+auth:
+  secretStore: kubernetes
+
+scopes:
+  - chat-api
+  - todo-api
+  - recurring-task-service
+  - notification-service
+  - audit-log-service
+  - websocket-sync-service
