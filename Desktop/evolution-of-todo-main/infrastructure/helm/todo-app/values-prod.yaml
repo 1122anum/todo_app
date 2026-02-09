@@ -1,0 +1,424 @@
+# Production values for managed Kubernetes (AKS/GKE/OKE/DOKS)
+# Override default values for production environment
+
+# Global configuration
+global:
+  namespace: todo-app
+  imageRegistry: ghcr.io/your-org  # GitHub Container Registry
+  imagePullPolicy: Always  # Always pull latest images in production
+  storageClass: premium-rwo  # Premium storage for production
+
+# Dapr configuration
+dapr:
+  enabled: true
+  appPort: 8000
+  logLevel: warn  # Less verbose in production
+  enableMetrics: true
+  metricsPort: 9090
+
+# Frontend Service
+frontend:
+  enabled: true
+  replicaCount: 3  # Multiple replicas for high availability
+  image:
+    repository: ghcr.io/your-org/todo-frontend
+    tag: "2.0.0"  # Use specific version tags in production
+  service:
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+  resources:
+    requests:
+      cpu: 300m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  env:
+    - name: NODE_ENV
+      value: "production"
+    - name: NEXT_PUBLIC_API_URL
+      value: "https://api.todo-app.com"
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+
+# Chat API Service
+chatApi:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: ghcr.io/your-org/todo-chat-api
+    tag: "2.0.0"
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  dapr:
+    enabled: true
+    appId: chat-api
+    appPort: 8000
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+  env:
+    - name: ENVIRONMENT
+      value: "production"
+    - name: LOG_LEVEL
+      value: "warn"
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+
+# Todo API Service
+todoApi:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: ghcr.io/your-org/todo-api
+    tag: "2.0.0"
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  dapr:
+    enabled: true
+    appId: todo-api
+    appPort: 8000
+  resources:
+    requests:
+      cpu: 300m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  env:
+    - name: ENVIRONMENT
+      value: "production"
+    - name: LOG_LEVEL
+      value: "warn"
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+
+# Recurring Task Service
+recurringTaskService:
+  enabled: true
+  replicaCount: 2  # Multiple replicas with leader election
+  image:
+    repository: ghcr.io/your-org/todo-recurring-service
+    tag: "2.0.0"
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  dapr:
+    enabled: true
+    appId: recurring-task-service
+    appPort: 8000
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  env:
+    - name: ENVIRONMENT
+      value: "production"
+    - name: LOG_LEVEL
+      value: "warn"
+    - name: CRON_SCHEDULE
+      value: "*/1 * * * *"
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+
+# Notification Service
+notificationService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/your-org/todo-notification-service
+    tag: "2.0.0"
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  dapr:
+    enabled: true
+    appId: notification-service
+    appPort: 8000
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  env:
+    - name: ENVIRONMENT
+      value: "production"
+    - name: LOG_LEVEL
+      value: "warn"
+    - name: CRON_SCHEDULE
+      value: "*/1 * * * *"
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+
+# Audit Log Service
+auditLogService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/your-org/todo-audit-service
+    tag: "2.0.0"
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  dapr:
+    enabled: true
+    appId: audit-log-service
+    appPort: 8000
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  env:
+    - name: ENVIRONMENT
+      value: "production"
+    - name: LOG_LEVEL
+      value: "warn"
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+
+# WebSocket Sync Service
+websocketSyncService:
+  enabled: true
+  replicaCount: 3  # Multiple replicas for WebSocket load balancing
+  image:
+    repository: ghcr.io/your-org/todo-websocket-service
+    tag: "2.0.0"
+  service:
+    type: ClusterIP
+    port: 8003
+    targetPort: 8003
+  dapr:
+    enabled: true
+    appId: websocket-sync-service
+    appPort: 8003
+  resources:
+    requests:
+      cpu: 300m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  env:
+    - name: ENVIRONMENT
+      value: "production"
+    - name: LOG_LEVEL
+      value: "warn"
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8003
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8003
+    initialDelaySeconds: 10
+    periodSeconds: 5
+
+# Ingress configuration (production with TLS)
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+  hosts:
+    - host: todo-app.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+          port: 3000
+        - path: /api
+          pathType: Prefix
+          service: todo-api
+          port: 8000
+        - path: /chat
+          pathType: Prefix
+          service: chat-api
+          port: 8000
+        - path: /ws
+          pathType: Prefix
+          service: websocket-sync-service
+          port: 8003
+  tls:
+    - secretName: todo-app-tls
+      hosts:
+        - todo-app.com
+        - www.todo-app.com
+
+# Database configuration
+database:
+  secretName: db-connection
+  connectionStringKey: connectionString
+
+# Monitoring and observability (production-grade)
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 15s
+      scrapeTimeout: 10s
+  grafana:
+    enabled: true
+    dashboards:
+      enabled: true
+
+# Autoscaling (enabled for production)
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Pod disruption budget (ensure availability during updates)
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Security context (strict for production)
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+
+# Network policies (enabled for production)
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: ingress-nginx
+  egress:
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: redpanda
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: dapr-system
+
+# Pod affinity (spread across zones for high availability)
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - todo-app
+        topologyKey: topology.kubernetes.io/zone
+
+# Tolerations for dedicated node pools
+tolerations:
+  - key: "workload-type"
+    operator: "Equal"
+    value: "application"
+    effect: "NoSchedule"
+
+# Node selector for production workloads
+nodeSelector:
+  workload-type: application
+  environment: production

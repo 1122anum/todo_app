@@ -1,0 +1,94 @@
+# Redpanda Configuration for Event-Driven Todo Platform
+# This file contains Helm values for deploying Redpanda on Kubernetes
+
+# Redpanda cluster configuration
+cluster:
+  name: todo-redpanda
+
+# Statefulset configuration
+statefulset:
+  replicas: 1  # Single replica for local development
+  updateStrategy:
+    type: RollingUpdate
+
+# Resource allocation
+resources:
+  cpu:
+    cores: 1
+  memory:
+    container:
+      min: 1Gi
+      max: 2Gi
+    redpanda:
+      memory: 1Gi
+      reserveMemory: 256Mi
+
+# Storage configuration
+storage:
+  persistentVolume:
+    enabled: true
+    size: 10Gi
+    storageClass: ""  # Use default storage class
+  tieredConfig:
+    cloud_storage_enabled: false
+
+# Kafka API configuration
+listeners:
+  kafka:
+    port: 9092
+    external:
+      enabled: false  # No external access needed for local dev
+  admin:
+    port: 9644
+  http:
+    enabled: true
+    port: 8082
+  schemaRegistry:
+    enabled: false  # Not using schema registry (using event version field)
+
+# Monitoring and observability
+monitoring:
+  enabled: true
+  scrapeInterval: 30s
+
+# Security
+auth:
+  sasl:
+    enabled: false  # Disabled for local development
+  tls:
+    enabled: false  # Disabled for local development
+
+# Logging
+logging:
+  logLevel: info
+
+# Tuning for development
+tuning:
+  tune_aio_events: false
+  tune_clocksource: false
+  ballast_file_path: ""
+  ballast_file_size: ""
+
+# Service configuration
+service:
+  type: ClusterIP
+  ports:
+    kafka: 9092
+    admin: 9644
+    http: 8082
+
+# Pod configuration
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9644"
+  prometheus.io/path: "/metrics"
+
+podLabels:
+  app: redpanda
+  component: event-streaming
+  managed-by: helm
+
+# Affinity and tolerations
+affinity: {}
+tolerations: []
+nodeSelector: {}

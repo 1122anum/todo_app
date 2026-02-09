@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: todo-chatbot-config
+  labels:
+    app: todo-chatbot
+    component: config
+data:
+  # Frontend configuration
+  NEXT_PUBLIC_API_URL: "http://todo-backend:8000"
+
+  # Backend configuration
+  BACKEND_URL: "http://todo-backend:8000"
+
+  # Application settings
+  LOG_LEVEL: "info"
+  NODE_ENV: "production"
+
+  # Feature flags
+  ENABLE_CHAT: "true"
+  ENABLE_TASKS: "true"
+
+  # API configuration
+  API_TIMEOUT: "30000"
+  MAX_RETRIES: "3"

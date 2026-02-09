@@ -1,0 +1,294 @@
+name: CI/CD Pipeline - Event-Driven Todo Platform
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}
+
+jobs:
+  # Job 1: Lint and Test Backend
+  test-backend:
+    name: Test Backend Services
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest pytest-cov ruff mypy
+
+      - name: Lint with Ruff
+        run: |
+          cd backend
+          ruff check .
+
+      - name: Type check with mypy
+        run: |
+          cd backend
+          mypy src/ --ignore-missing-imports
+        continue-on-error: true
+
+      - name: Run tests
+        run: |
+          cd backend
+          pytest tests/ -v --cov=src --cov-report=xml --cov-report=term
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./backend/coverage.xml
+          flags: backend
+          token: ${{ secrets.CODECOV_TOKEN }}
+        continue-on-error: true
+
+  # Job 2: Lint and Test Frontend
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Lint
+        run: |
+          cd frontend
+          npm run lint
+
+      - name: Type check
+        run: |
+          cd frontend
+          npm run type-check
+        continue-on-error: true
+
+      - name: Run tests
+        run: |
+          cd frontend
+          npm run test
+        continue-on-error: true
+
+      - name: Build
+        run: |
+          cd frontend
+          npm run build
+
+  # Job 3: Build and Push Docker Images
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service:
+          - name: frontend
+            context: ./frontend
+            dockerfile: ./frontend/Dockerfile
+          - name: chat-api
+            context: ./backend
+            dockerfile: ./backend/Dockerfile.chat
+          - name: todo-api
+            context: ./backend
+            dockerfile: ./backend/Dockerfile.todo
+          - name: recurring-service
+            context: ./backend
+            dockerfile: ./backend/Dockerfile.recurring
+          - name: notification-service
+            context: ./backend
+            dockerfile: ./backend/Dockerfile.notification
+          - name: audit-service
+            context: ./backend
+            dockerfile: ./backend/Dockerfile.audit
+          - name: websocket-service
+            context: ./backend
+            dockerfile: ./backend/Dockerfile.websocket
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/todo-${{ matrix.service.name }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+  # Job 4: Deploy to Staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url: https://staging.todo-app.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.27.0'
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'v3.12.0'
+
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 -d > kubeconfig
+          export KUBECONFIG=./kubeconfig
+          kubectl cluster-info
+
+      - name: Deploy with Helm
+        run: |
+          export KUBECONFIG=./kubeconfig
+          helm upgrade --install todo-app ./infrastructure/helm/todo-app \
+            --namespace todo-app \
+            --create-namespace \
+            --values ./infrastructure/helm/todo-app/values.yaml \
+            --values ./infrastructure/helm/todo-app/values-staging.yaml \
+            --set global.imageTag=${{ github.sha }} \
+            --wait \
+            --timeout 10m
+
+      - name: Verify deployment
+        run: |
+          export KUBECONFIG=./kubeconfig
+          kubectl rollout status deployment -n todo-app --timeout=5m
+          kubectl get pods -n todo-app
+
+  # Job 5: Deploy to Production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    environment:
+      name: production
+      url: https://todo-app.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.27.0'
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'v3.12.0'
+
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBECONFIG_PRODUCTION }}" | base64 -d > kubeconfig
+          export KUBECONFIG=./kubeconfig
+          kubectl cluster-info
+
+      - name: Deploy with Helm
+        run: |
+          export KUBECONFIG=./kubeconfig
+          helm upgrade --install todo-app ./infrastructure/helm/todo-app \
+            --namespace todo-app \
+            --create-namespace \
+            --values ./infrastructure/helm/todo-app/values.yaml \
+            --values ./infrastructure/helm/todo-app/values-prod.yaml \
+            --set global.imageTag=${{ github.sha }} \
+            --wait \
+            --timeout 10m
+
+      - name: Verify deployment
+        run: |
+          export KUBECONFIG=./kubeconfig
+          kubectl rollout status deployment -n todo-app --timeout=5m
+          kubectl get pods -n todo-app
+
+      - name: Run smoke tests
+        run: |
+          curl -f https://todo-app.com/api/health || exit 1
+          echo "Smoke tests passed!"
+
+  # Job 6: Notify on Failure
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend, build-images, deploy-staging, deploy-production]
+    if: failure()
+    steps:
+      - name: Send notification
+        run: |
+          echo "Pipeline failed! Check the logs for details."
+          # Add Slack/Discord/Email notification here

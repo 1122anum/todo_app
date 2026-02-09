@@ -1,0 +1,224 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Reminders Schema",
+  "description": "Event schema for reminders Kafka topic - reminder notifications",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_id",
+    "event_type",
+    "timestamp",
+    "user_id",
+    "reminder",
+    "metadata"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Schema version for backward compatibility",
+      "pattern": "^\\d+\\.\\d+$",
+      "example": "1.0"
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique event identifier (UUID v4)",
+      "example": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": ["reminder.triggered", "reminder.snoozed", "reminder.cancelled"],
+      "description": "Type of reminder event"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the event occurred (ISO 8601)",
+      "example": "2026-02-09T10:00:00Z"
+    },
+    "user_id": {
+      "type": "integer",
+      "description": "User who should receive the reminder",
+      "minimum": 1,
+      "example": 42
+    },
+    "reminder": {
+      "type": "object",
+      "description": "Reminder data",
+      "required": ["id", "task_id", "scheduled_time"],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Reminder ID",
+          "minimum": 1
+        },
+        "task_id": {
+          "type": "integer",
+          "description": "Associated task ID",
+          "minimum": 1
+        },
+        "task_title": {
+          "type": "string",
+          "description": "Task title (for display in notification)",
+          "maxLength": 255
+        },
+        "scheduled_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When reminder was scheduled (ISO 8601)"
+        },
+        "notification_channel": {
+          "type": "string",
+          "enum": ["in_app"],
+          "description": "Notification channel (in_app only in Phase V)"
+        },
+        "message": {
+          "type": "string",
+          "description": "Reminder message to display",
+          "maxLength": 500
+        },
+        "snoozed_until": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "When to re-trigger if snoozed (ISO 8601)"
+        }
+      }
+    },
+    "task": {
+      "type": "object",
+      "description": "Associated task data (for context)",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Task ID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Task title"
+        },
+        "due_date": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Task due date"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["high", "medium", "low"],
+          "description": "Task priority"
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Task completion status"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Event metadata for tracing and debugging",
+      "required": ["source", "correlation_id"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": ["notification_service"],
+          "description": "Service that published the event"
+        },
+        "correlation_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Correlation ID for distributed tracing"
+        },
+        "trigger_reason": {
+          "type": "string",
+          "enum": ["scheduled", "snoozed", "manual"],
+          "description": "Why the reminder was triggered"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "schema_version": "1.0",
+      "event_id": "550e8400-e29b-41d4-a716-446655440000",
+      "event_type": "reminder.triggered",
+      "timestamp": "2026-02-10T16:00:00Z",
+      "user_id": 42,
+      "reminder": {
+        "id": 10,
+        "task_id": 123,
+        "task_title": "Buy groceries",
+        "scheduled_time": "2026-02-10T16:00:00Z",
+        "notification_channel": "in_app",
+        "message": "Reminder: Buy groceries is due in 1 hour",
+        "snoozed_until": null
+      },
+      "task": {
+        "id": 123,
+        "title": "Buy groceries",
+        "due_date": "2026-02-10T17:00:00Z",
+        "priority": "high",
+        "completed": false
+      },
+      "metadata": {
+        "source": "notification_service",
+        "correlation_id": "660e8400-e29b-41d4-a716-446655440001",
+        "trigger_reason": "scheduled"
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "event_id": "770e8400-e29b-41d4-a716-446655440002",
+      "event_type": "reminder.snoozed",
+      "timestamp": "2026-02-10T16:05:00Z",
+      "user_id": 42,
+      "reminder": {
+        "id": 10,
+        "task_id": 123,
+        "task_title": "Buy groceries",
+        "scheduled_time": "2026-02-10T16:00:00Z",
+        "notification_channel": "in_app",
+        "message": "Reminder: Buy groceries is due in 1 hour",
+        "snoozed_until": "2026-02-10T16:30:00Z"
+      },
+      "task": {
+        "id": 123,
+        "title": "Buy groceries",
+        "due_date": "2026-02-10T17:00:00Z",
+        "priority": "high",
+        "completed": false
+      },
+      "metadata": {
+        "source": "notification_service",
+        "correlation_id": "880e8400-e29b-41d4-a716-446655440003",
+        "trigger_reason": "manual"
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "event_id": "990e8400-e29b-41d4-a716-446655440004",
+      "event_type": "reminder.cancelled",
+      "timestamp": "2026-02-10T16:45:00Z",
+      "user_id": 42,
+      "reminder": {
+        "id": 10,
+        "task_id": 123,
+        "task_title": "Buy groceries",
+        "scheduled_time": "2026-02-10T16:00:00Z",
+        "notification_channel": "in_app",
+        "message": "Reminder: Buy groceries is due in 1 hour",
+        "snoozed_until": null
+      },
+      "task": {
+        "id": 123,
+        "title": "Buy groceries",
+        "due_date": "2026-02-10T17:00:00Z",
+        "priority": "high",
+        "completed": true
+      },
+      "metadata": {
+        "source": "notification_service",
+        "correlation_id": "aa0e8400-e29b-41d4-a716-446655440005",
+        "trigger_reason": "manual"
+      }
+    }
+  ]
+}

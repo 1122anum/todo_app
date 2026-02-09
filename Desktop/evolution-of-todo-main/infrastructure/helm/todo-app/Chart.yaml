@@ -1,0 +1,19 @@
+apiVersion: v2
+name: todo-app
+description: Event-Driven Todo Platform - Phase V
+type: application
+version: 2.0.0
+appVersion: "2.0.0"
+keywords:
+  - todo
+  - event-driven
+  - microservices
+  - dapr
+  - kubernetes
+maintainers:
+  - name: Tech Trends
+    email: tech@example.com
+dependencies: []
+annotations:
+  category: Application
+  licenses: MIT

@@ -1,0 +1,121 @@
+# Redpanda Configuration for Production Deployment
+# This file contains Helm values for deploying Redpanda on managed Kubernetes
+
+# Redpanda cluster configuration
+cluster:
+  name: todo-redpanda-prod
+
+# Statefulset configuration
+statefulset:
+  replicas: 3  # Three replicas for high availability
+  updateStrategy:
+    type: RollingUpdate
+
+# Resource allocation (production-grade)
+resources:
+  cpu:
+    cores: 2
+  memory:
+    container:
+      min: 2Gi
+      max: 4Gi
+    redpanda:
+      memory: 3Gi
+      reserveMemory: 512Mi
+
+# Storage configuration
+storage:
+  persistentVolume:
+    enabled: true
+    size: 50Gi
+    storageClass: "premium-rwo"  # Use premium storage for production
+  tieredConfig:
+    cloud_storage_enabled: true
+    cloud_storage_region: "us-east-1"  # Configure based on deployment region
+
+# Kafka API configuration
+listeners:
+  kafka:
+    port: 9092
+    external:
+      enabled: true  # Enable external access for cloud deployment
+      type: LoadBalancer
+  admin:
+    port: 9644
+  http:
+    enabled: true
+    port: 8082
+  schemaRegistry:
+    enabled: false  # Not using schema registry (using event version field)
+
+# Monitoring and observability
+monitoring:
+  enabled: true
+  scrapeInterval: 15s
+
+# Security (production-grade)
+auth:
+  sasl:
+    enabled: true
+    mechanism: SCRAM-SHA-256
+    secretRef: redpanda-sasl-secret
+  tls:
+    enabled: true
+    certs:
+      secretRef: redpanda-tls-secret
+
+# Logging
+logging:
+  logLevel: warn  # Less verbose in production
+
+# Tuning for production
+tuning:
+  tune_aio_events: true
+  tune_clocksource: true
+  ballast_file_path: "/var/lib/redpanda/data/ballast"
+  ballast_file_size: "1GiB"
+
+# Service configuration
+service:
+  type: LoadBalancer
+  ports:
+    kafka: 9092
+    admin: 9644
+    http: 8082
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"  # AWS NLB for production
+
+# Pod configuration
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9644"
+  prometheus.io/path: "/metrics"
+
+podLabels:
+  app: redpanda
+  component: event-streaming
+  environment: production
+  managed-by: helm
+
+# Affinity for high availability (spread across zones)
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector:
+        matchExpressions:
+        - key: app
+          operator: In
+          values:
+          - redpanda
+      topologyKey: topology.kubernetes.io/zone
+
+# Tolerations and node selection
+tolerations: []
+nodeSelector:
+  workload-type: stateful
+
+# Backup and disaster recovery
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention: 7  # Keep 7 days of backups

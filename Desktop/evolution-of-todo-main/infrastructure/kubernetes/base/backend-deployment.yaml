@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-backend
+  labels:
+    app: todo-backend
+    tier: backend
+    component: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todo-backend
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: todo-backend
+        tier: backend
+        component: api
+    spec:
+      containers:
+      - name: todo-backend
+        image: todo-backend:latest
+        imagePullPolicy: Never  # Use local image from Minikube
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: todo-chatbot-secrets
+              key: DATABASE_URL
+        - name: OPENROUTER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: todo-chatbot-secrets
+              key: OPENROUTER_API_KEY
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: todo-chatbot-secrets
+              key: JWT_SECRET
+        - name: AUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: todo-chatbot-secrets
+              key: AUTH_SECRET
+        - name: BACKEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: todo-chatbot-config
+              key: BACKEND_URL
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: todo-chatbot-config
+              key: LOG_LEVEL
+        - name: OPENROUTER_BASE_URL
+          value: "https://openrouter.ai/api/v1"
+        - name: OPENROUTER_MODEL
+          value: "openai/gpt-3.5-turbo"
+        - name: JWT_ALGORITHM
+          value: "HS256"
+        - name: ACCESS_TOKEN_EXPIRE_MINUTES
+          value: "30"
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 40
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 20
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false

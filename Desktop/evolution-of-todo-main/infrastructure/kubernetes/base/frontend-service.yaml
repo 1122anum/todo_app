@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-frontend
+  labels:
+    app: todo-frontend
+    tier: frontend
+    component: ui
+spec:
+  type: NodePort
+  selector:
+    app: todo-frontend
+    tier: frontend
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  sessionAffinity: None
