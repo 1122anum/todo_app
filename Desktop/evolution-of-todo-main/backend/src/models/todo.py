@@ -4,7 +4,7 @@ Task model for event-driven todo platform (Phase V).
 Represents a task with advanced features: priority, due dates, tags, recurrence.
 """
 from sqlmodel import SQLModel, Field, Column
-from sqlalchemy import ARRAY, String
+from sqlalchemy import JSON
 from datetime import datetime
 from typing import Optional, List
 from enum import Enum
@@ -47,7 +47,7 @@ class Task(SQLModel, table=True):
     # Phase V: Advanced features
     priority: TaskPriority = Field(default=TaskPriority.MEDIUM)
     due_date: Optional[datetime] = Field(default=None, index=True)
-    tags: List[str] = Field(default_factory=list, sa_column=Column(ARRAY(String(50))))
+    tags: List[str] = Field(default_factory=list, sa_column=Column(JSON))
 
     # Phase V: Recurrence support
     recurrence_pattern_id: Optional[int] = Field(
