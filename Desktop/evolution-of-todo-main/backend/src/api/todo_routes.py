@@ -3,7 +3,7 @@ Todo routes for CRUD operations with Phase V features.
 
 Supports recurring tasks, priorities, tags, reminders, and event-driven architecture.
 """
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Query
 from pydantic import BaseModel
 from sqlmodel import Session
 from typing import List, Optional, Dict, Any
@@ -13,10 +13,12 @@ import logging
 from ..database import get_session
 from ..models.todo import Task, TaskPriority
 from ..models.reminder import Reminder, ReminderStatus
+from ..models.tag import Tag
 from ..models.user import User
 from ..middleware.auth import get_current_user
 from ..services.todo_service import TodoService
 from ..services.reminder_service import ReminderService
+from ..services.tag_service import TagService
 
 logger = logging.getLogger(__name__)
 
@@ -82,44 +84,81 @@ async def get_tasks(
     completed: Optional[bool] = None,
     priority: Optional[str] = None,
     tags: Optional[str] = None,  # Comma-separated
+    search: Optional[str] = None,  # T056: Search keyword
+    due_date_filter: Optional[str] = None,  # T057: overdue, today, this-week, no-date
+    sort_by: Optional[str] = None,  # T058: due_date, priority, created_at, title
+    sort_order: Optional[str] = "desc",  # T058: asc, desc
     limit: int = 100,
     offset: int = 0,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
     """
-    Get all tasks for the current user with optional filters.
+    Get all tasks for the current user with optional filters, search, and sorting.
 
     Args:
         completed: Filter by completion status
         priority: Filter by priority (high, medium, low)
         tags: Comma-separated list of tags to filter by
+        search: Keyword to search in title and description (T056)
+        due_date_filter: Filter by due date - overdue, today, this-week, no-date (T057)
+        sort_by: Field to sort by - due_date, priority, created_at, title (T058)
+        sort_order: Sort order - asc or desc (T058)
         limit: Maximum number of tasks to return
         offset: Number of tasks to skip
         session: Database session
         current_user: Authenticated user
 
     Returns:
-        List of tasks
+        List of tasks matching the criteria
     """
     try:
         service = TodoService(session)
 
         # Parse filters
         priority_enum = TaskPriority(priority) if priority else None
-        tag_list = tags.split(',') if tags else None
+        tag_list = [t.strip() for t in tags.split(',')] if tags else None
+
+        # Validate sort parameters
+        valid_sort_fields = ['due_date', 'priority', 'created_at', 'title']
+        if sort_by and sort_by not in valid_sort_fields:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid sort_by field. Must be one of: {', '.join(valid_sort_fields)}"
+            )
+
+        valid_sort_orders = ['asc', 'desc']
+        if sort_order not in valid_sort_orders:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid sort_order. Must be one of: {', '.join(valid_sort_orders)}"
+            )
+
+        # Validate due_date_filter
+        valid_due_date_filters = ['overdue', 'today', 'this-week', 'no-date']
+        if due_date_filter and due_date_filter not in valid_due_date_filters:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid due_date_filter. Must be one of: {', '.join(valid_due_date_filters)}"
+            )
 
         tasks = service.list_tasks(
             user_id=current_user.user_id,
             completed=completed,
             priority=priority_enum,
             tags=tag_list,
+            search=search,
+            due_date_filter=due_date_filter,
+            sort_by=sort_by,
+            sort_order=sort_order,
             limit=limit,
             offset=offset
         )
 
         return tasks
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error fetching tasks: {str(e)}", exc_info=True)
         raise HTTPException(
@@ -619,8 +658,254 @@ async def delete_reminder(
         )
 
 
+# Tag Endpoints
+
+class TagResponse(BaseModel):
+    """Tag response."""
+    id: int
+    user_id: int
+    name: str
+    color: Optional[str]
+    usage_count: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TagCreate(BaseModel):
+    """Tag creation request."""
+    name: str
+    color: Optional[str] = None
+
+
+class TagUpdate(BaseModel):
+    """Tag update request."""
+    name: Optional[str] = None
+    color: Optional[str] = None
+
+
+@router.get("/tags", response_model=List[TagResponse])
+async def get_tags(
+    min_usage: int = 0,
+    limit: int = 100,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get all tags for the current user.
+
+    Args:
+        min_usage: Minimum usage count filter
+        limit: Maximum number of tags to return
+        session: Database session
+        current_user: Authenticated user
+
+    Returns:
+        List of tags ordered by usage count
+    """
+    try:
+        tag_service = TagService(session)
+        tags = tag_service.list_tags(
+            user_id=current_user.user_id,
+            min_usage=min_usage,
+            limit=limit
+        )
+        return tags
+
+    except Exception as e:
+        logger.error(f"Error fetching tags: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch tags"
+        )
+
+
+@router.get("/tags/autocomplete", response_model=List[TagResponse])
+async def autocomplete_tags(
+    q: str = Query("", description="Search query"),
+    limit: int = Query(10, ge=1, le=50),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Autocomplete tags by name.
+
+    Args:
+        q: Search query (partial tag name)
+        limit: Maximum number of results
+        session: Database session
+        current_user: Authenticated user
+
+    Returns:
+        List of matching tags ordered by usage count
+    """
+    try:
+        tag_service = TagService(session)
+        tags = tag_service.search_tags(
+            user_id=current_user.user_id,
+            query=q,
+            limit=limit
+        )
+        return tags
+
+    except Exception as e:
+        logger.error(f"Error searching tags: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to search tags"
+        )
+
+
+@router.post("/tags", response_model=TagResponse, status_code=status.HTTP_201_CREATED)
+async def create_tag(
+    tag: TagCreate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Create a new tag.
+
+    Args:
+        tag: Tag creation data
+        session: Database session
+        current_user: Authenticated user
+
+    Returns:
+        Created tag
+    """
+    try:
+        tag_service = TagService(session)
+        new_tag = tag_service.get_or_create_tag(
+            user_id=current_user.user_id,
+            name=tag.name,
+            color=tag.color
+        )
+
+        logger.info(f"Tag created/retrieved: {new_tag.id} for user {current_user.user_id}")
+        return new_tag
+
+    except ValueError as e:
+        logger.warning(f"Validation error creating tag: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error creating tag: {str(e)}", exc_info=True)
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create tag"
+        )
+
+
+@router.put("/tags/{tag_id}", response_model=TagResponse)
+async def update_tag(
+    tag_id: int,
+    tag_update: TagUpdate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Update a tag.
+
+    Args:
+        tag_id: Tag ID
+        tag_update: Tag update data
+        session: Database session
+        current_user: Authenticated user
+
+    Returns:
+        Updated tag
+    """
+    try:
+        tag_service = TagService(session)
+
+        # Build updates dict
+        updates = {}
+        if tag_update.name is not None:
+            updates['name'] = tag_update.name
+        if tag_update.color is not None:
+            updates['color'] = tag_update.color
+
+        tag = tag_service.update_tag(tag_id, current_user.user_id, **updates)
+
+        if not tag:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Tag not found"
+            )
+
+        logger.info(f"Tag updated: {tag.id}")
+        return tag
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        logger.warning(f"Validation error updating tag: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Error updating tag: {str(e)}", exc_info=True)
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update tag"
+        )
+
+
+@router.delete("/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_tag(
+    tag_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Delete a tag.
+
+    Only tags with zero usage count can be deleted.
+
+    Args:
+        tag_id: Tag ID
+        session: Database session
+        current_user: Authenticated user
+    """
+    try:
+        tag_service = TagService(session)
+        deleted = tag_service.delete_tag(tag_id, current_user.user_id)
+
+        if not deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Tag not found"
+            )
+
+        logger.info(f"Tag deleted: {tag_id}")
+
+    except ValueError as e:
+        logger.warning(f"Cannot delete tag: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting tag: {str(e)}", exc_info=True)
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete tag"
+        )
+
+
 # Backward compatibility aliases
 TodoCreate = TaskCreate
 TodoUpdate = TaskUpdate
 TodoResponse = TaskResponse
+
 

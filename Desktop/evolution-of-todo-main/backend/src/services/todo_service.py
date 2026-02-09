@@ -128,37 +128,125 @@ class TodoService:
         completed: Optional[bool] = None,
         priority: Optional[TaskPriority] = None,
         tags: Optional[List[str]] = None,
+        search: Optional[str] = None,  # T056: Search keyword
+        due_date_filter: Optional[str] = None,  # T057: overdue, today, this-week, no-date
+        sort_by: Optional[str] = None,  # T058: due_date, priority, created_at, title
+        sort_order: str = "desc",  # T058: asc, desc
         limit: int = 100,
         offset: int = 0,
     ) -> List[Task]:
         """
-        List tasks for a user with optional filters.
+        List tasks for a user with optional filters, search, and sorting.
 
         Args:
             user_id: Owner ID
             completed: Filter by completion status (optional)
             priority: Filter by priority (optional)
             tags: Filter by tags (optional)
+            search: Keyword to search in title and description (T056)
+            due_date_filter: Filter by due date - overdue, today, this-week, no-date (T057)
+            sort_by: Field to sort by - due_date, priority, created_at, title (T058)
+            sort_order: Sort order - asc or desc (T058)
             limit: Maximum number of tasks to return
             offset: Number of tasks to skip
 
         Returns:
-            List of tasks
+            List of tasks matching the criteria
         """
+        from sqlalchemy import or_, func, case
+
         statement = select(Task).where(Task.user_id == user_id)
 
+        # Completion status filter
         if completed is not None:
             statement = statement.where(Task.completed == completed)
 
+        # Priority filter
         if priority is not None:
             statement = statement.where(Task.priority == priority)
 
+        # Tags filter (tasks must have all specified tags)
         if tags:
-            # Filter tasks that have all specified tags
             for tag in tags:
                 statement = statement.where(Task.tags.contains([tag]))
 
-        statement = statement.order_by(Task.created_at.desc()).limit(limit).offset(offset)
+        # T056: Search filter (case-insensitive search in title and description)
+        if search:
+            search_pattern = f"%{search}%"
+            statement = statement.where(
+                or_(
+                    Task.title.ilike(search_pattern),
+                    Task.description.ilike(search_pattern)
+                )
+            )
+
+        # T057: Due date filter
+        if due_date_filter:
+            from datetime import date, timedelta
+            today = date.today()
+
+            if due_date_filter == "overdue":
+                # Tasks with due_date before today
+                statement = statement.where(
+                    Task.due_date < datetime.combine(today, datetime.min.time())
+                )
+            elif due_date_filter == "today":
+                # Tasks due today
+                start_of_day = datetime.combine(today, datetime.min.time())
+                end_of_day = datetime.combine(today, datetime.max.time())
+                statement = statement.where(
+                    Task.due_date >= start_of_day,
+                    Task.due_date <= end_of_day
+                )
+            elif due_date_filter == "this-week":
+                # Tasks due within the next 7 days
+                start_of_day = datetime.combine(today, datetime.min.time())
+                week_from_now = datetime.combine(today + timedelta(days=7), datetime.max.time())
+                statement = statement.where(
+                    Task.due_date >= start_of_day,
+                    Task.due_date <= week_from_now
+                )
+            elif due_date_filter == "no-date":
+                # Tasks with no due date
+                statement = statement.where(Task.due_date.is_(None))
+
+        # T058: Sorting
+        if sort_by:
+            if sort_by == "priority":
+                # Sort by priority: high (3) > medium (2) > low (1)
+                # Map enum values to sortable integers
+                priority_order = case(
+                    (Task.priority == TaskPriority.HIGH, 3),
+                    (Task.priority == TaskPriority.MEDIUM, 2),
+                    (Task.priority == TaskPriority.LOW, 1),
+                    else_=0
+                )
+                if sort_order == "asc":
+                    statement = statement.order_by(priority_order.asc())
+                else:
+                    statement = statement.order_by(priority_order.desc())
+            elif sort_by == "due_date":
+                # Sort by due_date (NULL values last)
+                if sort_order == "asc":
+                    statement = statement.order_by(Task.due_date.asc().nullslast())
+                else:
+                    statement = statement.order_by(Task.due_date.desc().nullslast())
+            elif sort_by == "title":
+                if sort_order == "asc":
+                    statement = statement.order_by(Task.title.asc())
+                else:
+                    statement = statement.order_by(Task.title.desc())
+            elif sort_by == "created_at":
+                if sort_order == "asc":
+                    statement = statement.order_by(Task.created_at.asc())
+                else:
+                    statement = statement.order_by(Task.created_at.desc())
+        else:
+            # Default sorting: created_at desc
+            statement = statement.order_by(Task.created_at.desc())
+
+        # Pagination
+        statement = statement.limit(limit).offset(offset)
 
         return list(self.session.exec(statement).all())
 
