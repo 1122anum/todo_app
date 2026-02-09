@@ -11,7 +11,7 @@ export default async function handler(
   const { path } = req.query;
 
   // Construct the backend URL
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+  const backendUrl = process.env.BACKEND_URL || 'http://localhost:8080';
 
   // Handle both /api/todos and /api/todos/:id
   const pathString = Array.isArray(path) ? path.join('/') : path || '';
