@@ -1,0 +1,184 @@
+---
+# WebSocket Sync Service Deployment
+# T073: Deploy WebSocket Sync Service to Kubernetes with Dapr sidecar
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: websocket-sync-service
+  namespace: default
+  labels:
+    app: websocket-sync-service
+    version: v1
+spec:
+  replicas: 2  # Multiple replicas for high availability
+  selector:
+    matchLabels:
+      app: websocket-sync-service
+  template:
+    metadata:
+      labels:
+        app: websocket-sync-service
+        version: v1
+      annotations:
+        # Dapr sidecar configuration
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "websocket-sync-service"
+        dapr.io/app-port: "8003"
+        dapr.io/app-protocol: "http"
+        dapr.io/log-level: "info"
+        dapr.io/enable-metrics: "true"
+        dapr.io/metrics-port: "9090"
+        # Dapr Pub/Sub configuration
+        dapr.io/enable-api-logging: "true"
+    spec:
+      containers:
+      - name: websocket-sync-service
+        image: websocket-sync-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8003
+          name: http
+          protocol: TCP
+        env:
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: jwt-secret
+        - name: DAPR_HTTP_PORT
+          value: "3500"
+        - name: DAPR_GRPC_PORT
+          value: "50001"
+        - name: LOG_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+---
+# WebSocket Sync Service Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: websocket-sync-service
+  namespace: default
+  labels:
+    app: websocket-sync-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8003
+    targetPort: 8003
+    protocol: TCP
+    name: http
+  selector:
+    app: websocket-sync-service
+
+---
+# WebSocket Sync Service Ingress (for external access)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: websocket-sync-service
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/websocket-services: "websocket-sync-service"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: todo-app.local
+    http:
+      paths:
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: websocket-sync-service
+            port:
+              number: 8003
+
+---
+# Horizontal Pod Autoscaler for WebSocket Sync Service
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: websocket-sync-service-hpa
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: websocket-sync-service
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 30
+      - type: Pods
+        value: 2
+        periodSeconds: 30
+      selectPolicy: Max
+
+---
+# Service Monitor for Prometheus (optional)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: websocket-sync-service
+  namespace: default
+  labels:
+    app: websocket-sync-service
+spec:
+  selector:
+    matchLabels:
+      app: websocket-sync-service
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
