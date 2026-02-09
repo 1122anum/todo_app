@@ -147,13 +147,13 @@ Phase 2 (Foundational)
 - [x] T028 [P] [US1] Create RecurrencePatternService in backend/src/services/recurrence_pattern_service.py
 - [x] T029 [P] [US1] Implement recurring task creation in TodoService in backend/src/services/todo_service.py
 - [x] T030 [US1] Add recurring task endpoints to Todo API in backend/src/api/todo_routes.py
-- [ ] T031 [US1] Publish task.created events for recurring tasks via Dapr Pub/Sub
-- [ ] T032 [P] [US1] Create Recurring Task Service (FastAPI) in backend/src/services/recurring_task_service.py
-- [ ] T033 [US1] Implement Dapr Cron Binding handler in Recurring Task Service
-- [ ] T034 [US1] Implement instance generation logic (query due patterns, create instances)
-- [ ] T035 [US1] Publish task.created events for new instances via Dapr Pub/Sub
-- [ ] T036 [P] [US1] Add recurring task UI components in frontend/src/components/RecurringTaskForm.tsx
-- [ ] T037 [US1] Deploy Recurring Task Service to Kubernetes with Dapr sidecar
+- [x] T031 [US1] Publish task.created events for recurring tasks via Dapr Pub/Sub
+- [x] T032 [P] [US1] Create Recurring Task Service (FastAPI) in backend/src/services/recurring_task_service.py
+- [x] T033 [US1] Implement Dapr Cron Binding handler in Recurring Task Service
+- [x] T034 [US1] Implement instance generation logic (query due patterns, create instances)
+- [x] T035 [US1] Publish task.created events for new instances via Dapr Pub/Sub
+- [x] T036 [P] [US1] Add recurring task UI components in frontend/src/components/RecurringTaskForm.tsx
+- [x] T037 [US1] Deploy Recurring Task Service to Kubernetes with Dapr sidecar
 
 **Acceptance Criteria**:
 - ✅ User can create recurring task via UI
