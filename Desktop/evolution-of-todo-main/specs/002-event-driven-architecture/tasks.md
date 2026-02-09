@@ -218,16 +218,16 @@ Phase 2 (Foundational)
 
 ### Tasks
 
-- [ ] T046 [P] [US3] Update TodoService to handle priority field in backend/src/services/todo_service.py
-- [ ] T047 [P] [US3] Create TagService for tag management in backend/src/services/tag_service.py
-- [ ] T048 [US3] Add tag endpoints to Todo API in backend/src/api/todo_routes.py
-- [ ] T049 [US3] Implement tag autocomplete endpoint in backend/src/api/todo_routes.py
-- [ ] T050 [US3] Publish task.updated events when priority/tags change via Dapr Pub/Sub
-- [ ] T051 [P] [US3] Add priority selector UI component in frontend/src/components/PrioritySelector.tsx
-- [ ] T052 [P] [US3] Add tag input UI component with autocomplete in frontend/src/components/TagInput.tsx
-- [ ] T053 [US3] Update task list to display priority visually in frontend/src/components/TodoList.tsx
-- [ ] T054 [US3] Update task list to display tags in frontend/src/components/TodoList.tsx
-- [ ] T055 [US3] Add priority and tag filters to task list in frontend/src/components/TaskFilters.tsx
+- [x] T046 [P] [US3] Update TodoService to handle priority field in backend/src/services/todo_service.py
+- [x] T047 [P] [US3] Create TagService for tag management in backend/src/services/tag_service.py
+- [x] T048 [US3] Add tag endpoints to Todo API in backend/src/api/todo_routes.py
+- [x] T049 [US3] Implement tag autocomplete endpoint in backend/src/api/todo_routes.py
+- [x] T050 [US3] Publish task.updated events when priority/tags change via Dapr Pub/Sub
+- [x] T051 [P] [US3] Add priority selector UI component in frontend/src/components/PrioritySelector.tsx
+- [x] T052 [P] [US3] Add tag input UI component with autocomplete in frontend/src/components/TagInput.tsx
+- [x] T053 [US3] Update task list to display priority visually in frontend/src/components/TodoList.tsx
+- [x] T054 [US3] Update task list to display tags in frontend/src/components/TodoList.tsx
+- [x] T055 [US3] Add priority and tag filters to task list in frontend/src/components/TaskFilters.tsx
 
 **Acceptance Criteria**:
 - ✅ User can set priority when creating/editing tasks
@@ -257,14 +257,14 @@ Phase 2 (Foundational)
 
 ### Tasks
 
-- [ ] T056 [P] [US4] Implement search endpoint in Todo API in backend/src/api/todo_routes.py
-- [ ] T057 [P] [US4] Implement filter endpoint with multiple criteria in backend/src/api/todo_routes.py
-- [ ] T058 [P] [US4] Implement sort endpoint in backend/src/api/todo_routes.py
-- [ ] T059 [US4] Add database indexes for search performance (title, description)
-- [ ] T060 [US4] Implement live search in frontend in frontend/src/components/SearchBar.tsx
-- [ ] T061 [US4] Add filter UI with multiple criteria in frontend/src/components/TaskFilters.tsx
-- [ ] T062 [US4] Add sort UI with dropdown in frontend/src/components/TaskSort.tsx
-- [ ] T063 [US4] Persist filter/sort preferences in localStorage in frontend/src/hooks/useTaskPreferences.ts
+- [x] T056 [P] [US4] Implement search endpoint in Todo API in backend/src/api/todo_routes.py
+- [x] T057 [P] [US4] Implement filter endpoint with multiple criteria in backend/src/api/todo_routes.py
+- [x] T058 [P] [US4] Implement sort endpoint in backend/src/api/todo_routes.py
+- [x] T059 [US4] Add database indexes for search performance (title, description)
+- [x] T060 [US4] Implement live search in frontend in frontend/src/components/SearchBar.tsx
+- [x] T061 [US4] Add filter UI with multiple criteria in frontend/src/components/TaskFilters.tsx
+- [x] T062 [US4] Add sort UI with dropdown in frontend/src/components/TaskSort.tsx
+- [x] T063 [US4] Persist filter/sort preferences in localStorage in frontend/src/hooks/useTaskPreferences.ts
 
 **Acceptance Criteria**:
 - ✅ Search returns results within 500ms
@@ -293,16 +293,16 @@ Phase 2 (Foundational)
 
 ### Tasks
 
-- [ ] T064 [P] [US5] Create WebSocket Sync Service (FastAPI) in backend/src/services/websocket_sync_service.py
-- [ ] T065 [US5] Implement WebSocket connection handler with authentication
-- [ ] T066 [US5] Implement Dapr Pub/Sub subscription to task-updates topic
-- [ ] T067 [US5] Implement event-to-WebSocket push logic (user-specific channels)
-- [ ] T068 [US5] Implement heartbeat/ping-pong for connection management
-- [ ] T069 [US5] Update Chat API to publish to task-updates topic after operations
-- [ ] T070 [US5] Update Todo API to publish to task-updates topic after operations
-- [ ] T071 [P] [US5] Create WebSocket client in frontend in frontend/src/services/websocketClient.ts
-- [ ] T072 [US5] Implement automatic reconnection with exponential backoff
-- [ ] T073 [US5] Deploy WebSocket Sync Service to Kubernetes with Dapr sidecar
+- [x] T064 [P] [US5] Create WebSocket Sync Service (FastAPI) in backend/src/services/websocket_sync_service.py
+- [x] T065 [US5] Implement WebSocket connection handler with authentication
+- [x] T066 [US5] Implement Dapr Pub/Sub subscription to task-updates topic
+- [x] T067 [US5] Implement event-to-WebSocket push logic (user-specific channels)
+- [x] T068 [US5] Implement heartbeat/ping-pong for connection management
+- [x] T069 [US5] Update Chat API to publish to task-updates topic after operations
+- [x] T070 [US5] Update Todo API to publish to task-updates topic after operations
+- [x] T071 [P] [US5] Create WebSocket client in frontend in frontend/src/services/websocketClient.ts
+- [x] T072 [US5] Implement automatic reconnection with exponential backoff
+- [x] T073 [US5] Deploy WebSocket Sync Service to Kubernetes with Dapr sidecar
 
 **Acceptance Criteria**:
 - ✅ WebSocket connection established on app load
@@ -323,19 +323,19 @@ Phase 2 (Foundational)
 
 ### Audit Trail (FR7)
 
-- [ ] T074 [P] Create Audit Log Service (FastAPI) in backend/src/services/audit_log_service.py
-- [ ] T075 Implement Dapr Pub/Sub subscription to task-events topic
-- [ ] T076 Implement audit record persistence via Dapr State Management
-- [ ] T077 Add audit trail API endpoint in backend/src/api/audit_routes.py
-- [ ] T078 [P] Add audit trail UI component in frontend/src/components/AuditTrail.tsx
-- [ ] T079 Deploy Audit Log Service to Kubernetes with Dapr sidecar
+- [x] T074 [P] Create Audit Log Service (FastAPI) in backend/src/services/audit_log_service.py
+- [x] T075 Implement Dapr Pub/Sub subscription to task-events topic
+- [x] T076 Implement audit record persistence via Dapr State Management
+- [x] T077 Add audit trail API endpoint in backend/src/api/audit_routes.py
+- [x] T078 [P] Add audit trail UI component in frontend/src/components/AuditTrail.tsx
+- [x] T079 Deploy Audit Log Service to Kubernetes with Dapr sidecar
 
 ### Observability (FR - Observability by Default)
 
-- [ ] T080 [P] Implement structured logging with correlation IDs in all services
-- [ ] T081 [P] Add Prometheus metrics endpoints to all services (/metrics)
-- [ ] T082 [P] Enable Dapr distributed tracing (Zipkin/Jaeger)
-- [ ] T083 Configure centralized logging (forward to cloud logging service)
+- [x] T080 [P] Implement structured logging with correlation IDs in all services
+- [x] T081 [P] Add Prometheus metrics endpoints to all services (/metrics)
+- [x] T082 [P] Enable Dapr distributed tracing (Zipkin/Jaeger)
+- [x] T083 Configure centralized logging (forward to cloud logging service)
 
 **Acceptance Criteria**:
 - ✅ All task changes recorded in audit trail
@@ -356,12 +356,12 @@ Phase 2 (Foundational)
 
 ### Tasks
 
-- [ ] T084 Run end-to-end tests on Minikube (verify all user stories)
-- [ ] T085 Load testing (verify 10,000 concurrent users, 10x scalability)
-- [ ] T086 Security audit (verify no secrets in code, TLS enabled)
-- [ ] T087 Provision managed Kubernetes cluster (AKS/GKE/OKE/DOKS)
-- [ ] T088 Deploy to production via GitHub Actions CI/CD pipeline
-- [ ] T089 Verify production deployment (smoke tests, monitoring, alerts)
+- [x] T084 Run end-to-end tests on Minikube (verify all user stories)
+- [x] T085 Load testing (verify 10,000 concurrent users, 10x scalability)
+- [x] T086 Security audit (verify no secrets in code, TLS enabled)
+- [x] T087 Provision managed Kubernetes cluster (AKS/GKE/OKE/DOKS)
+- [x] T088 Deploy to production via GitHub Actions CI/CD pipeline
+- [x] T089 Verify production deployment (smoke tests, monitoring, alerts)
 
 **Acceptance Criteria**:
 - ✅ All user stories pass end-to-end tests
