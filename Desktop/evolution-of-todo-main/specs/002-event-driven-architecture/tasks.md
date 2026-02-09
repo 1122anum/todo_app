@@ -182,14 +182,14 @@ Phase 2 (Foundational)
 
 ### Tasks
 
-- [ ] T038 [P] [US2] Create ReminderService in backend/src/services/reminder_service.py
-- [ ] T039 [P] [US2] Add reminder endpoints to Todo API in backend/src/api/todo_routes.py
-- [ ] T040 [US2] Implement reminder creation when task with due_date is created
-- [ ] T041 [P] [US2] Create Notification Service (FastAPI) in backend/src/services/notification_service.py
-- [ ] T042 [US2] Implement Dapr Cron Binding handler in Notification Service
-- [ ] T043 [US2] Implement reminder checking logic (query due reminders)
-- [ ] T044 [US2] Publish reminder.triggered events to reminders topic via Dapr Pub/Sub
-- [ ] T045 [P] [US2] Add reminder UI components in frontend/src/components/ReminderForm.tsx
+- [x] T038 [P] [US2] Create ReminderService in backend/src/services/reminder_service.py
+- [x] T039 [P] [US2] Add reminder endpoints to Todo API in backend/src/api/todo_routes.py
+- [x] T040 [US2] Implement reminder creation when task with due_date is created
+- [x] T041 [P] [US2] Create Notification Service (FastAPI) in backend/src/services/notification_service.py
+- [x] T042 [US2] Implement Dapr Cron Binding handler in Notification Service
+- [x] T043 [US2] Implement reminder checking logic (query due reminders)
+- [x] T044 [US2] Publish reminder.triggered events to reminders topic via Dapr Pub/Sub
+- [x] T045 [P] [US2] Add reminder UI components in frontend/src/components/ReminderForm.tsx
 
 **Acceptance Criteria**:
 - ✅ User can add reminders to tasks via UI

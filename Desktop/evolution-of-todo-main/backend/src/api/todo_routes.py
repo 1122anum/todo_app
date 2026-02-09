@@ -1,7 +1,7 @@
 """
 Todo routes for CRUD operations with Phase V features.
 
-Supports recurring tasks, priorities, tags, and event-driven architecture.
+Supports recurring tasks, priorities, tags, reminders, and event-driven architecture.
 """
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
@@ -12,9 +12,11 @@ import logging
 
 from ..database import get_session
 from ..models.todo import Task, TaskPriority
+from ..models.reminder import Reminder, ReminderStatus
 from ..models.user import User
 from ..middleware.auth import get_current_user
 from ..services.todo_service import TodoService
+from ..services.reminder_service import ReminderService
 
 logger = logging.getLogger(__name__)
 
@@ -413,7 +415,212 @@ async def delete_task(
         )
 
 
+# Reminder Endpoints
+
+class ReminderCreate(BaseModel):
+    """Reminder creation request."""
+    scheduled_time: datetime
+    notification_channel: str = "in_app"
+
+
+class ReminderResponse(BaseModel):
+    """Reminder response."""
+    id: int
+    task_id: int
+    user_id: int
+    scheduled_time: datetime
+    notification_channel: str
+    status: str
+    snoozed_until: Optional[datetime]
+    sent_at: Optional[datetime]
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/{task_id}/reminders", response_model=List[ReminderResponse])
+async def get_task_reminders(
+    task_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get all reminders for a task.
+
+    Args:
+        task_id: Task ID
+        session: Database session
+        current_user: Authenticated user
+
+    Returns:
+        List of reminders
+    """
+    try:
+        reminder_service = ReminderService(session)
+        reminders = reminder_service.list_reminders(
+            user_id=current_user.user_id,
+            task_id=task_id
+        )
+        return reminders
+
+    except Exception as e:
+        logger.error(f"Error fetching reminders: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch reminders"
+        )
+
+
+@router.post("/{task_id}/reminders", response_model=ReminderResponse, status_code=status.HTTP_201_CREATED)
+async def create_task_reminder(
+    task_id: int,
+    reminder: ReminderCreate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Create a reminder for a task.
+
+    Args:
+        task_id: Task ID
+        reminder: Reminder creation data
+        session: Database session
+        current_user: Authenticated user
+
+    Returns:
+        Created reminder
+    """
+    try:
+        # Verify task exists and belongs to user
+        todo_service = TodoService(session)
+        task = todo_service.get_task(task_id, current_user.user_id)
+
+        if not task:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Task not found"
+            )
+
+        # Create reminder
+        reminder_service = ReminderService(session)
+        new_reminder = reminder_service.create_reminder(
+            task_id=task_id,
+            user_id=current_user.user_id,
+            scheduled_time=reminder.scheduled_time
+        )
+
+        logger.info(f"Reminder created: {new_reminder.id} for task {task_id}")
+        return new_reminder
+
+    except ValueError as e:
+        logger.warning(f"Validation error creating reminder: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating reminder: {str(e)}", exc_info=True)
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create reminder"
+        )
+
+
+@router.post("/{task_id}/reminders/{reminder_id}/snooze", response_model=ReminderResponse)
+async def snooze_reminder(
+    task_id: int,
+    reminder_id: int,
+    snooze_minutes: int = 10,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Snooze a reminder.
+
+    Args:
+        task_id: Task ID
+        reminder_id: Reminder ID
+        snooze_minutes: Minutes to snooze (default: 10)
+        session: Database session
+        current_user: Authenticated user
+
+    Returns:
+        Updated reminder
+    """
+    try:
+        reminder_service = ReminderService(session)
+        reminder = reminder_service.snooze_reminder(
+            reminder_id,
+            current_user.user_id,
+            snooze_minutes
+        )
+
+        if not reminder:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Reminder not found"
+            )
+
+        logger.info(f"Reminder snoozed: {reminder_id} for {snooze_minutes} minutes")
+        return reminder
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error snoozing reminder: {str(e)}", exc_info=True)
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to snooze reminder"
+        )
+
+
+@router.delete("/{task_id}/reminders/{reminder_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_reminder(
+    task_id: int,
+    reminder_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Delete a reminder.
+
+    Args:
+        task_id: Task ID
+        reminder_id: Reminder ID
+        session: Database session
+        current_user: Authenticated user
+    """
+    try:
+        reminder_service = ReminderService(session)
+        deleted = reminder_service.delete_reminder(reminder_id, current_user.user_id)
+
+        if not deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Reminder not found"
+            )
+
+        logger.info(f"Reminder deleted: {reminder_id}")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting reminder: {str(e)}", exc_info=True)
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete reminder"
+        )
+
+
 # Backward compatibility aliases
 TodoCreate = TaskCreate
 TodoUpdate = TaskUpdate
 TodoResponse = TaskResponse
+
