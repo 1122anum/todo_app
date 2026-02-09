@@ -144,9 +144,9 @@ Phase 2 (Foundational)
 
 ### Tasks
 
-- [ ] T028 [P] [US1] Create RecurrencePatternService in backend/src/services/recurrence_pattern_service.py
-- [ ] T029 [P] [US1] Implement recurring task creation in TodoService in backend/src/services/todo_service.py
-- [ ] T030 [US1] Add recurring task endpoints to Todo API in backend/src/api/todo_routes.py
+- [x] T028 [P] [US1] Create RecurrencePatternService in backend/src/services/recurrence_pattern_service.py
+- [x] T029 [P] [US1] Implement recurring task creation in TodoService in backend/src/services/todo_service.py
+- [x] T030 [US1] Add recurring task endpoints to Todo API in backend/src/api/todo_routes.py
 - [ ] T031 [US1] Publish task.created events for recurring tasks via Dapr Pub/Sub
 - [ ] T032 [P] [US1] Create Recurring Task Service (FastAPI) in backend/src/services/recurring_task_service.py
 - [ ] T033 [US1] Implement Dapr Cron Binding handler in Recurring Task Service
