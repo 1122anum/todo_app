@@ -102,21 +102,21 @@ Phase 2 (Foundational)
 
 ### Tasks
 
-- [ ] T013 Create database migration for enhanced Task entity in backend/migrations/002_add_task_enhancements.sql
-- [ ] T014 Create database migration for RecurrencePattern entity in backend/migrations/003_create_recurrence_patterns.sql
-- [ ] T015 Create database migration for Reminder entity in backend/migrations/004_create_reminders.sql
-- [ ] T016 Create database migration for Tag entity in backend/migrations/005_create_tags.sql
-- [ ] T017 Create database migration for TaskEvent entity in backend/migrations/006_create_task_events.sql
-- [ ] T018 Run database migrations against Neon PostgreSQL
-- [ ] T019 Define event schema for task-events topic in specs/002-event-driven-architecture/events/task-events-schema.json
-- [ ] T020 Define event schema for reminders topic in specs/002-event-driven-architecture/events/reminders-schema.json
-- [ ] T021 Define event schema for task-updates topic in specs/002-event-driven-architecture/events/task-updates-schema.json
-- [ ] T022 Create Kafka topics (task-events, reminders, task-updates) via Redpanda
-- [ ] T023 [P] Update Task model with new fields in backend/src/models/task.py
-- [ ] T024 [P] Create RecurrencePattern model in backend/src/models/recurrence_pattern.py
-- [ ] T025 [P] Create Reminder model in backend/src/models/reminder.py
-- [ ] T026 [P] Create Tag model in backend/src/models/tag.py
-- [ ] T027 [P] Create TaskEvent model in backend/src/models/task_event.py
+- [x] T013 Create database migration for enhanced Task entity in backend/migrations/002_add_task_enhancements.sql
+- [x] T014 Create database migration for RecurrencePattern entity in backend/migrations/003_create_recurrence_patterns.sql
+- [x] T015 Create database migration for Reminder entity in backend/migrations/004_create_reminders.sql
+- [x] T016 Create database migration for Tag entity in backend/migrations/005_create_tags.sql
+- [x] T017 Create database migration for TaskEvent entity in backend/migrations/006_create_task_events.sql
+- [x] T018 Run database migrations against Neon PostgreSQL
+- [x] T019 Define event schema for task-events topic in specs/002-event-driven-architecture/events/task-events-schema.json
+- [x] T020 Define event schema for reminders topic in specs/002-event-driven-architecture/events/reminders-schema.json
+- [x] T021 Define event schema for task-updates topic in specs/002-event-driven-architecture/events/task-updates-schema.json
+- [x] T022 Create Kafka topics (task-events, reminders, task-updates) via Redpanda
+- [x] T023 [P] Update Task model with new fields in backend/src/models/task.py
+- [x] T024 [P] Create RecurrencePattern model in backend/src/models/recurrence_pattern.py
+- [x] T025 [P] Create Reminder model in backend/src/models/reminder.py
+- [x] T026 [P] Create Tag model in backend/src/models/tag.py
+- [x] T027 [P] Create TaskEvent model in backend/src/models/task_event.py
 
 **Acceptance Criteria**:
 - All database tables created with indexes

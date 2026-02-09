@@ -1,0 +1,302 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Task Updates Schema",
+  "description": "Event schema for task-updates Kafka topic - real-time synchronization events",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_id",
+    "event_type",
+    "timestamp",
+    "user_id",
+    "task",
+    "metadata"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Schema version for backward compatibility",
+      "pattern": "^\\d+\\.\\d+$",
+      "example": "1.0"
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique event identifier (UUID v4)",
+      "example": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "task.created",
+        "task.updated",
+        "task.deleted",
+        "task.completed",
+        "task.uncompleted",
+        "reminder.triggered"
+      ],
+      "description": "Type of update event for real-time sync"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the event occurred (ISO 8601)",
+      "example": "2026-02-09T10:00:00Z"
+    },
+    "user_id": {
+      "type": "integer",
+      "description": "User whose devices should receive this update",
+      "minimum": 1,
+      "example": 42
+    },
+    "task": {
+      "type": "object",
+      "description": "Task data for synchronization",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Task ID",
+          "minimum": 1
+        },
+        "title": {
+          "type": "string",
+          "description": "Task title",
+          "maxLength": 255
+        },
+        "description": {
+          "type": ["string", "null"],
+          "description": "Task description",
+          "maxLength": 2000
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Completion status"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["high", "medium", "low"],
+          "description": "Task priority"
+        },
+        "due_date": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "When task is due (ISO 8601)"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "maxItems": 10,
+          "description": "Task tags"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Task creation timestamp"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        }
+      }
+    },
+    "changes": {
+      "type": ["object", "null"],
+      "description": "Changed fields (only for task.updated events)",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["old_value", "new_value"],
+        "properties": {
+          "old_value": {
+            "description": "Previous value"
+          },
+          "new_value": {
+            "description": "New value"
+          }
+        }
+      }
+    },
+    "reminder": {
+      "type": ["object", "null"],
+      "description": "Reminder data (only for reminder.triggered events)",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Reminder ID"
+        },
+        "task_id": {
+          "type": "integer",
+          "description": "Associated task ID"
+        },
+        "message": {
+          "type": "string",
+          "description": "Reminder message",
+          "maxLength": 500
+        },
+        "scheduled_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When reminder was scheduled"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Event metadata for tracing and routing",
+      "required": ["source", "correlation_id"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": [
+            "chat_api",
+            "todo_api",
+            "recurring_task_service",
+            "notification_service"
+          ],
+          "description": "Service that published the event"
+        },
+        "correlation_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Correlation ID for distributed tracing"
+        },
+        "device_id": {
+          "type": ["string", "null"],
+          "description": "Device that originated the change (to avoid echo)"
+        },
+        "sync_priority": {
+          "type": "string",
+          "enum": ["high", "normal", "low"],
+          "default": "normal",
+          "description": "Priority for sync delivery"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "schema_version": "1.0",
+      "event_id": "550e8400-e29b-41d4-a716-446655440000",
+      "event_type": "task.created",
+      "timestamp": "2026-02-09T10:00:00Z",
+      "user_id": 42,
+      "task": {
+        "id": 123,
+        "title": "Buy groceries",
+        "description": "Milk, eggs, bread",
+        "completed": false,
+        "priority": "high",
+        "due_date": "2026-02-10T17:00:00Z",
+        "tags": ["personal", "shopping"],
+        "created_at": "2026-02-09T10:00:00Z",
+        "updated_at": "2026-02-09T10:00:00Z"
+      },
+      "changes": null,
+      "reminder": null,
+      "metadata": {
+        "source": "chat_api",
+        "correlation_id": "660e8400-e29b-41d4-a716-446655440001",
+        "device_id": "device-abc-123",
+        "sync_priority": "high"
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "event_id": "770e8400-e29b-41d4-a716-446655440002",
+      "event_type": "task.updated",
+      "timestamp": "2026-02-09T10:05:00Z",
+      "user_id": 42,
+      "task": {
+        "id": 123,
+        "title": "Buy groceries and cook dinner",
+        "priority": "high",
+        "updated_at": "2026-02-09T10:05:00Z"
+      },
+      "changes": {
+        "title": {
+          "old_value": "Buy groceries",
+          "new_value": "Buy groceries and cook dinner"
+        }
+      },
+      "reminder": null,
+      "metadata": {
+        "source": "todo_api",
+        "correlation_id": "880e8400-e29b-41d4-a716-446655440003",
+        "device_id": "device-xyz-789",
+        "sync_priority": "normal"
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "event_id": "990e8400-e29b-41d4-a716-446655440004",
+      "event_type": "task.completed",
+      "timestamp": "2026-02-09T10:10:00Z",
+      "user_id": 42,
+      "task": {
+        "id": 123,
+        "completed": true,
+        "updated_at": "2026-02-09T10:10:00Z"
+      },
+      "changes": {
+        "completed": {
+          "old_value": false,
+          "new_value": true
+        }
+      },
+      "reminder": null,
+      "metadata": {
+        "source": "todo_api",
+        "correlation_id": "aa0e8400-e29b-41d4-a716-446655440005",
+        "device_id": null,
+        "sync_priority": "high"
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "event_id": "bb0e8400-e29b-41d4-a716-446655440006",
+      "event_type": "reminder.triggered",
+      "timestamp": "2026-02-10T16:00:00Z",
+      "user_id": 42,
+      "task": {
+        "id": 123,
+        "title": "Buy groceries",
+        "due_date": "2026-02-10T17:00:00Z"
+      },
+      "changes": null,
+      "reminder": {
+        "id": 10,
+        "task_id": 123,
+        "message": "Reminder: Buy groceries is due in 1 hour",
+        "scheduled_time": "2026-02-10T16:00:00Z"
+      },
+      "metadata": {
+        "source": "notification_service",
+        "correlation_id": "cc0e8400-e29b-41d4-a716-446655440007",
+        "device_id": null,
+        "sync_priority": "high"
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "event_id": "dd0e8400-e29b-41d4-a716-446655440008",
+      "event_type": "task.deleted",
+      "timestamp": "2026-02-09T10:15:00Z",
+      "user_id": 42,
+      "task": {
+        "id": 123
+      },
+      "changes": null,
+      "reminder": null,
+      "metadata": {
+        "source": "todo_api",
+        "correlation_id": "ee0e8400-e29b-41d4-a716-446655440009",
+        "device_id": "device-abc-123",
+        "sync_priority": "high"
+      }
+    }
+  ]
+}
