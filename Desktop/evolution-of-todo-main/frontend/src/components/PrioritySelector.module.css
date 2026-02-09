@@ -1,0 +1,133 @@
+/**
+ * PrioritySelector component styles
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+/* Priority Options */
+.options {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.option:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.option.active {
+  font-weight: 600;
+}
+
+.icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.optionLabel {
+  line-height: 1;
+}
+
+/* Priority Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge.small {
+  padding: 0.125rem 0.375rem;
+  font-size: 0.6875rem;
+}
+
+.badge.medium {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.badge.large {
+  padding: 0.375rem 0.625rem;
+  font-size: 0.875rem;
+}
+
+.badgeIcon {
+  font-size: 0.875em;
+  line-height: 1;
+}
+
+.badgeLabel {
+  line-height: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .options {
+    width: 100%;
+  }
+
+  .option {
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .option {
+    padding: 0.375rem 0.625rem;
+    font-size: 0.8125rem;
+  }
+
+  .icon {
+    font-size: 0.875rem;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .option {
+    background: var(--bg-secondary);
+  }
+
+  .option:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+  }
+}
