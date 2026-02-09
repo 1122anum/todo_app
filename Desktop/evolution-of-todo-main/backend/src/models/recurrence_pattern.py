@@ -4,7 +4,7 @@ RecurrencePattern model for recurring task support.
 Defines how recurring tasks repeat (daily, weekly, monthly patterns).
 """
 from sqlmodel import SQLModel, Field, Column
-from sqlalchemy import ARRAY, Integer
+from sqlalchemy import JSON
 from datetime import datetime
 from typing import Optional, List
 from enum import Enum
@@ -45,7 +45,7 @@ class RecurrencePattern(SQLModel, table=True):
     # Pattern-specific fields
     days_of_week: Optional[List[int]] = Field(
         default=None,
-        sa_column=Column(ARRAY(Integer))
+        sa_column=Column(JSON)
     )
     day_of_month: Optional[int] = Field(default=None, ge=1, le=31)
 
