@@ -1,0 +1,106 @@
+---
+# Audit Log Service Deployment
+# T079: Deploy Audit Log Service to Kubernetes with Dapr sidecar
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audit-log-service
+  namespace: default
+  labels:
+    app: audit-log-service
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: audit-log-service
+  template:
+    metadata:
+      labels:
+        app: audit-log-service
+        version: v1
+      annotations:
+        # Dapr sidecar configuration
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "audit-log-service"
+        dapr.io/app-port: "8004"
+        dapr.io/app-protocol: "http"
+        dapr.io/log-level: "info"
+        dapr.io/enable-metrics: "true"
+        dapr.io/metrics-port: "9090"
+    spec:
+      containers:
+      - name: audit-log-service
+        image: audit-log-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8004
+          name: http
+          protocol: TCP
+        env:
+        - name: DAPR_HTTP_PORT
+          value: "3500"
+        - name: DAPR_GRPC_PORT
+          value: "50001"
+        - name: LOG_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8004
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8004
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+---
+# Audit Log Service Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: audit-log-service
+  namespace: default
+  labels:
+    app: audit-log-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8004
+    targetPort: 8004
+    protocol: TCP
+    name: http
+  selector:
+    app: audit-log-service
+
+---
+# Service Monitor for Prometheus
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: audit-log-service
+  namespace: default
+  labels:
+    app: audit-log-service
+spec:
+  selector:
+    matchLabels:
+      app: audit-log-service
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
