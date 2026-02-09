@@ -12,11 +12,11 @@ from typing import List
 import logging
 import os
 
-from backend.src.models.recurrence_pattern import RecurrencePattern
-from backend.src.models.todo import Task
-from backend.src.services.recurrence_pattern_service import RecurrencePatternService
-from backend.src.services.todo_service import TodoService
-from backend.src.services.dapr_event_publisher import DaprEventPublisher
+from ..models.recurrence_pattern import RecurrencePattern
+from ..models.todo import Task
+from .recurrence_pattern_service import RecurrencePatternService
+from .todo_service import TodoService
+from .dapr_event_publisher import DaprEventPublisher
 
 # Configure logging
 logging.basicConfig(

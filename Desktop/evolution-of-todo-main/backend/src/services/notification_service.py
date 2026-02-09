@@ -12,10 +12,10 @@ from typing import List
 import logging
 import os
 
-from backend.src.models.reminder import Reminder, ReminderStatus
-from backend.src.models.todo import Task
-from backend.src.services.reminder_service import ReminderService
-from backend.src.services.dapr_event_publisher import DaprEventPublisher
+from ..models.reminder import Reminder, ReminderStatus
+from ..models.todo import Task
+from .reminder_service import ReminderService
+from .dapr_event_publisher import DaprEventPublisher
 
 # Configure logging
 logging.basicConfig(

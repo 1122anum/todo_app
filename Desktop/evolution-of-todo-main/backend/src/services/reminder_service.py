@@ -6,7 +6,7 @@ Handles creation, updates, and querying of reminders for tasks.
 from datetime import datetime, timedelta
 from typing import List, Optional
 from sqlmodel import Session, select
-from backend.src.models.reminder import Reminder, ReminderStatus, NotificationChannel
+from ..models.reminder import Reminder, ReminderStatus, NotificationChannel
 
 
 class ReminderService:

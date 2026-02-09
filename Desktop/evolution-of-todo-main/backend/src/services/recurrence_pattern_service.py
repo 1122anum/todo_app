@@ -6,7 +6,7 @@ Handles creation, updates, and calculation of next occurrence dates.
 from datetime import datetime, timedelta
 from typing import List, Optional
 from sqlmodel import Session, select
-from backend.src.models.recurrence_pattern import RecurrencePattern, RecurrenceFrequency
+from ..models.recurrence_pattern import RecurrencePattern, RecurrenceFrequency
 
 
 class RecurrencePatternService:

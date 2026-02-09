@@ -8,7 +8,7 @@ import uuid
 import logging
 from datetime import datetime
 from typing import Dict, Any, Optional
-from backend.src.models.todo import Task
+from ..models.todo import Task
 
 logger = logging.getLogger(__name__)
 

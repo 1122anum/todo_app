@@ -6,9 +6,9 @@ Handles task CRUD operations, recurring tasks, and event publishing.
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from sqlmodel import Session, select
-from backend.src.models.todo import Task, TaskPriority
-from backend.src.models.recurrence_pattern import RecurrencePattern, RecurrenceFrequency
-from backend.src.services.recurrence_pattern_service import RecurrencePatternService
+from ..models.todo import Task, TaskPriority
+from ..models.recurrence_pattern import RecurrencePattern, RecurrenceFrequency
+from .recurrence_pattern_service import RecurrencePatternService
 import uuid
 
 
